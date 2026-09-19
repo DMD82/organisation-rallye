@@ -20,10 +20,12 @@
       <h3>Vision d'ensemble</h3>
       <div class="grid">
         <div class="card stat"><div class="value" id="v-jours">-</div><div class="label">Jours restants</div></div>
-        <div class="card stat"><div class="value" id="v-partenaires">-</div><div class="label">Partenaires</div></div>
-        <div class="card stat"><div class="value" id="v-ateliers">-</div><div class="label">Ateliers assignés</div></div>
-        <div class="card stat"><div class="value" id="v-ateliers-manquants">-</div><div class="label">Ateliers non confirmés</div></div>
-        <div class="card stat"><div class="value" id="v-equipes">-</div><div class="label">Équipes (objectif)</div></div>
+        <div class="card stat"><div class="value" id="v-equipes-attendues">-</div><div class="label">Équipes attendues</div></div>
+        <div class="card stat"><div class="value" id="v-equipes-confirmees">-</div><div class="label">Équipes confirmées</div></div>
+        <div class="card stat"><div class="value" id="v-partenaires-confirmes">-</div><div class="label">Partenaires confirmés</div></div>
+        <div class="card stat"><div class="value" id="v-partenaires-presomptifs">-</div><div class="label">Partenaires présomptifs</div></div>
+        <div class="card stat"><div class="value" id="v-capacite">-</div><div class="label">Capacité confirmée (équipes)</div></div>
+        <div class="card stat"><div class="value" id="v-ateliers-manquants">-</div><div class="label">Places manquantes</div></div>
         <div class="card stat"><div class="value" id="v-solde">-</div><div class="label">Solde budget réel</div></div>
         <div class="card stat"><div class="value" id="v-mecenes">-</div><div class="label">Mécènes</div></div>
         <div class="card stat"><div class="value" id="v-invitations">-</div><div class="label">Invités autorités</div></div>
@@ -31,6 +33,9 @@
         <div class="card stat"><div class="value" id="v-documents">-</div><div class="label">Documents catalogués</div></div>
         <div class="card stat"><div class="value" id="v-factures">-</div><div class="label">Factures/reçus émis</div></div>
       </div>
+      <p class="hint" style="margin-top:12px">
+        Capacité potentielle si tous les partenaires présomptifs se confirment : <strong id="v-capacite-potentielle">-</strong> équipes.
+      </p>
     </div>
 
     <!-- Reste à faire -->
@@ -59,6 +64,7 @@
         <div><label>Lieu</label><input name="lieu" placeholder="Complexe Jacques Chirac, Montauban"></div>
         <div><label>Objectif jeunes</label><input name="objectif_jeunes" type="number"></div>
         <div><label>Objectif équipes</label><input name="objectif_equipes" type="number"></div>
+        <div><label>Équipes confirmées</label><input name="equipes_confirmees" type="number" placeholder="À mettre à jour au fil des inscriptions"></div>
         <div><label>Objectif partenaires</label><input name="objectif_partenaires" type="number"></div>
         <div><button type="submit">Ajouter</button></div>
       </form>
@@ -99,10 +105,13 @@
       }
 
       document.getElementById('v-jours').textContent = d.joursRestants === null ? '-' : d.joursRestants;
-      document.getElementById('v-partenaires').textContent = d.partenariats.total;
-      document.getElementById('v-ateliers').textContent = d.ateliers.total;
+      document.getElementById('v-equipes-attendues').textContent = d.equipes.attendues || '-';
+      document.getElementById('v-equipes-confirmees').textContent = d.equipes.confirmees || '-';
+      document.getElementById('v-partenaires-confirmes').textContent = d.partenaires.confirmes;
+      document.getElementById('v-partenaires-presomptifs').textContent = d.partenaires.presomptifs;
+      document.getElementById('v-capacite').textContent = d.ateliers.capaciteConfirmee;
       document.getElementById('v-ateliers-manquants').textContent = d.ateliers.manquants;
-      document.getElementById('v-equipes').textContent = d.equipes.objectif || '-';
+      document.getElementById('v-capacite-potentielle').textContent = d.ateliers.capaciteTotalePotentielle;
       document.getElementById('v-solde').textContent = euros(d.budget.reel.solde);
       document.getElementById('v-mecenes').textContent = d.mecenes.total;
       document.getElementById('v-invitations').textContent = d.invitations.total;
