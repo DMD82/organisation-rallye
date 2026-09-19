@@ -56,8 +56,9 @@
 
     <!-- Éditions -->
     <div class="card">
-      <h3>Ajouter une édition</h3>
+      <h3 id="form-edition-title">Ajouter une édition</h3>
       <form class="inline-form" id="form-edition">
+        <input type="hidden" name="id" value="">
         <div><label>Année</label><input name="annee" placeholder="2027" required></div>
         <div><label>Thème</label><input name="theme" placeholder="Soigner, secourir, servir"></div>
         <div><label>Date de l'événement</label><input name="date_evenement" type="date"></div>
@@ -66,7 +67,10 @@
         <div><label>Objectif équipes</label><input name="objectif_equipes" type="number"></div>
         <div><label>Équipes confirmées</label><input name="equipes_confirmees" type="number" placeholder="À mettre à jour au fil des inscriptions"></div>
         <div><label>Objectif partenaires</label><input name="objectif_partenaires" type="number"></div>
-        <div><button type="submit">Ajouter</button></div>
+        <div style="display:flex;gap:8px">
+          <button type="submit" id="form-edition-submit">Ajouter</button>
+          <button type="button" class="secondary" id="form-edition-cancel" style="display:none" onclick="resetEditionForm()">Annuler</button>
+        </div>
       </form>
     </div>
 
@@ -148,7 +152,11 @@
         <tr>
           <td>${e.annee}</td><td>${e.theme || ''}</td><td>${e.date_evenement || ''}</td><td>${e.lieu || ''}</td>
           <td><span class="badge ${e.statut}">${e.statut}</span></td>
-          <td>${e.statut === 'active' ? '' : `<button class="secondary" onclick="setActive('${e.id}')">Définir comme active</button>`}</td>
+          <td style="display:flex;gap:6px">
+            ${e.statut === 'active' ? '' : `<button class="secondary" onclick="setActive('${e.id}')">Définir comme active</button>`}
+            <button class="secondary" onclick="editEdition('${e.id}')">Modifier</button>
+            <button class="secondary" onclick="deleteEdition('${e.id}')">Supprimer</button>
+          </td>
         </tr>`).join('');
     }
 
@@ -158,11 +166,49 @@
       else alert('Erreur : ' + res.error.message);
     }
 
+    function editEdition(id) {
+      const e = editionsData.find(x => x.id === id);
+      if (!e) return;
+      const form = document.getElementById('form-edition');
+      form.id.value = e.id;
+      form.annee.value = e.annee || '';
+      form.theme.value = e.theme || '';
+      form.date_evenement.value = e.date_evenement || '';
+      form.lieu.value = e.lieu || '';
+      form.objectif_jeunes.value = e.objectif_jeunes || '';
+      form.objectif_equipes.value = e.objectif_equipes || '';
+      form.equipes_confirmees.value = e.equipes_confirmees || '';
+      form.objectif_partenaires.value = e.objectif_partenaires || '';
+
+      document.getElementById('form-edition-title').textContent = 'Modifier l\'édition ' + e.annee;
+      document.getElementById('form-edition-submit').textContent = 'Enregistrer';
+      document.getElementById('form-edition-cancel').style.display = '';
+      form.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function resetEditionForm() {
+      const form = document.getElementById('form-edition');
+      form.reset();
+      form.id.value = '';
+      document.getElementById('form-edition-title').textContent = 'Ajouter une édition';
+      document.getElementById('form-edition-submit').textContent = 'Ajouter';
+      document.getElementById('form-edition-cancel').style.display = 'none';
+    }
+
+    async function deleteEdition(id) {
+      const e = editionsData.find(x => x.id === id);
+      if (!confirm('Supprimer définitivement l\'édition ' + (e ? e.annee : '') + ' ? Cette action est irréversible.')) return;
+      const res = await apiPost('generale.editions.delete', { id: id });
+      if (res.success) { loadEditions(); loadVision(); }
+      else alert('Erreur : ' + res.error.message);
+    }
+
     document.getElementById('form-edition').addEventListener('submit', async e => {
       e.preventDefault();
       const payload = Object.fromEntries(new FormData(e.target).entries());
-      const res = await apiPost('generale.editions.create', payload);
-      if (res.success) { e.target.reset(); loadEditions(); }
+      const isEdit = !!payload.id;
+      const res = await apiPost(isEdit ? 'generale.editions.update' : 'generale.editions.create', payload);
+      if (res.success) { resetEditionForm(); loadEditions(); loadVision(); }
       else alert('Erreur : ' + res.error.message);
     });
 
