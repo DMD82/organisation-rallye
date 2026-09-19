@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Bibliothèque</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card">
+      <p class="hint">
+        Ce catalogue ne stocke pas de fichiers : il référence des documents déjà
+        déposés sur Drive (dossier de sécurité, présentations, tableaux,
+        conventions type...). Déposez d'abord le fichier sur Drive, copiez son
+        lien de partage, puis ajoutez-le ici.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>Ajouter un document</h3>
+      <form class="inline-form" id="form-document">
+        <div><label>Titre</label><input name="titre" placeholder="Dossier de sécurité 2026" required></div>
+        <div><label>Catégorie</label>
+          <select name="categorie">
+            <option value="dossier_securite">Dossier de sécurité</option>
+            <option value="dossier_autorites">Dossier autorités</option>
+            <option value="presentation">Présentation</option>
+            <option value="consignes_participants">Consignes participants</option>
+            <option value="tableau_partenaires">Tableau partenaires</option>
+            <option value="convention_type">Convention type</option>
+            <option value="affiche">Affiche</option>
+            <option value="retex">RETEX</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+        <div><label>Type</label>
+          <select name="type">
+            <option value="archive_edition">Archive d'une édition précise</option>
+            <option value="modele">Modèle réutilisable chaque année</option>
+          </select>
+        </div>
+        <div><label>Lien Drive</label><input name="lien_drive" placeholder="https://docs.google.com/..." required></div>
+        <div><label>Notes</label><input name="notes" placeholder="Optionnel"></div>
+        <div><button type="submit">Ajouter</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Documents</h3>
+        <button class="secondary" onclick="exportCSV('bibliotheque', documentsData)">Exporter CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>Titre</th><th>Catégorie</th><th>Type</th><th>Ajouté le</th><th></th></tr></thead>
+        <tbody id="documents-body"><tr><td colspan="5" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('bibliotheque.html');
+
+    let documentsData = [];
+
+    const LABELS_CATEGORIE = {
+      dossier_securite: 'Dossier de sécurité', dossier_autorites: 'Dossier autorités',
+      presentation: 'Présentation', consignes_participants: 'Consignes participants',
+      tableau_partenaires: 'Tableau partenaires', convention_type: 'Convention type',
+      affiche: 'Affiche', retex: 'RETEX', autre: 'Autre'
+    };
+
+    async function loadDocuments() {
+      const res = await apiGet('documents.list');
+      const tbody = document.getElementById('documents-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="hint">Aucun document pour l\'instant.</td></tr>'; return; }
+      documentsData = res.data;
+      tbody.innerHTML = res.data.map(d => `
+        <tr>
+          <td>${d.titre}</td>
+          <td>${LABELS_CATEGORIE[d.categorie] || d.categorie}</td>
+          <td><span class="badge ${d.type === 'modele' ? 'promis' : 'sollicite'}">${d.type === 'modele' ? 'Modèle' : 'Archive'}</span></td>
+          <td>${d.date_ajout || ''}</td>
+          <td><a class="btn secondary" href="${d.lien_drive}" target="_blank">Ouvrir</a></td>
+        </tr>`).join('');
+    }
+
+    document.getElementById('form-document').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const res = await apiPost('documents.create', payload);
+      if (res.success) { e.target.reset(); loadDocuments(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    loadDocuments();
+  </script>
+</body>
+</html>

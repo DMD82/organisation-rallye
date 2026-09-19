@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Générale</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <!-- Édition active -->
+    <div class="card" id="edition-active-card">
+      <div class="hint">Chargement de l'édition active…</div>
+    </div>
+
+    <!-- Vision d'ensemble -->
+    <div class="card">
+      <h3>Vision d'ensemble</h3>
+      <div class="grid">
+        <div class="card stat"><div class="value" id="v-solde">-</div><div class="label">Solde budget réel</div></div>
+        <div class="card stat"><div class="value" id="v-mecenes">-</div><div class="label">Mécènes</div></div>
+        <div class="card stat"><div class="value" id="v-entites">-</div><div class="label">Entités dans l'annuaire</div></div>
+        <div class="card stat"><div class="value" id="v-documents">-</div><div class="label">Documents catalogués</div></div>
+        <div class="card stat"><div class="value" id="v-factures">-</div><div class="label">Factures/reçus émis</div></div>
+      </div>
+    </div>
+
+    <!-- Éditions -->
+    <div class="card">
+      <h3>Ajouter une édition</h3>
+      <form class="inline-form" id="form-edition">
+        <div><label>Année</label><input name="annee" placeholder="2027" required></div>
+        <div><label>Thème</label><input name="theme" placeholder="Soigner, secourir, servir"></div>
+        <div><label>Date de l'événement</label><input name="date_evenement" type="date"></div>
+        <div><label>Lieu</label><input name="lieu" placeholder="Complexe Jacques Chirac, Montauban"></div>
+        <div><label>Objectif jeunes</label><input name="objectif_jeunes" type="number"></div>
+        <div><label>Objectif équipes</label><input name="objectif_equipes" type="number"></div>
+        <div><label>Objectif partenaires</label><input name="objectif_partenaires" type="number"></div>
+        <div><button type="submit">Ajouter</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Éditions</h3>
+        <button class="secondary" onclick="exportCSV('editions', editionsData)">Exporter CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>Année</th><th>Thème</th><th>Date</th><th>Lieu</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="editions-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('generale.html');
+
+    let editionsData = [];
+
+    async function loadVision() {
+      const res = await apiGet('generale.vision');
+      if (!res.success) return;
+      const d = res.data;
+
+      const editionCard = document.getElementById('edition-active-card');
+      if (d.edition) {
+        editionCard.innerHTML = `
+          <div class="hint">Édition active</div>
+          <h2 style="margin:4px 0">${d.edition.annee} - ${d.edition.theme || 'Thème non défini'}</h2>
+          <p style="margin:0;color:var(--muted)">${d.edition.date_evenement || 'Date non définie'} · ${d.edition.lieu || 'Lieu non défini'}</p>`;
+      } else {
+        editionCard.innerHTML = `<div class="hint">Aucune édition active pour l'instant. Ajoutez une édition ci-dessous puis marquez-la comme active.</div>`;
+      }
+
+      document.getElementById('v-solde').textContent = euros(d.budget.reel.solde);
+      document.getElementById('v-mecenes').textContent = d.mecenes.total;
+      document.getElementById('v-entites').textContent = d.entites.total;
+      document.getElementById('v-documents').textContent = d.documents.total;
+      document.getElementById('v-factures').textContent = d.factures.total;
+    }
+
+    async function loadEditions() {
+      const res = await apiGet('generale.editions.list');
+      const tbody = document.getElementById('editions-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="6" class="hint">Aucune édition pour l\'instant.</td></tr>'; return; }
+      editionsData = res.data;
+      tbody.innerHTML = res.data.map(e => `
+        <tr>
+          <td>${e.annee}</td><td>${e.theme || ''}</td><td>${e.date_evenement || ''}</td><td>${e.lieu || ''}</td>
+          <td><span class="badge ${e.statut}">${e.statut}</span></td>
+          <td>${e.statut === 'active' ? '' : `<button class="secondary" onclick="setActive('${e.id}')">Définir comme active</button>`}</td>
+        </tr>`).join('');
+    }
+
+    async function setActive(id) {
+      const res = await apiPost('generale.editions.setActive', { id: id });
+      if (res.success) { loadEditions(); loadVision(); }
+      else alert('Erreur : ' + res.error.message);
+    }
+
+    document.getElementById('form-edition').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const res = await apiPost('generale.editions.create', payload);
+      if (res.success) { e.target.reset(); loadEditions(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    loadVision(); loadEditions();
+  </script>
+</body>
+</html>
