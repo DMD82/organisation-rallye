@@ -10,79 +10,106 @@
   <header class="topbar" id="topbar"></header>
 
   <main>
-    <!-- Édition active -->
-    <div class="card" id="edition-active-card">
-      <div class="hint">Chargement de l'édition active…</div>
+    <!-- Bandeau édition active -->
+    <div class="hero-banner" id="hero-banner">
+      <div>
+        <div class="hero-eyebrow">Édition active</div>
+        <div class="hero-title" id="hero-title">Chargement…</div>
+        <div class="hero-meta" id="hero-meta"></div>
+      </div>
+      <div class="hero-days">
+        <div class="value" id="hero-jours">-</div>
+        <div class="label">Jours restants</div>
+      </div>
     </div>
 
-    <!-- Vision d'ensemble -->
+    <!-- Essentiel : toujours visible -->
     <div class="card">
-      <h3>Vision d'ensemble</h3>
       <div class="grid">
-        <div class="card stat"><div class="value" id="v-jours">-</div><div class="label">Jours restants</div></div>
-        <div class="card stat"><div class="value" id="v-equipes-attendues">-</div><div class="label">Équipes attendues</div></div>
         <div class="card stat"><div class="value" id="v-equipes-confirmees">-</div><div class="label">Équipes confirmées</div></div>
-        <div class="card stat"><div class="value" id="v-partenaires-confirmes">-</div><div class="label">Partenaires confirmés</div></div>
-        <div class="card stat"><div class="value" id="v-partenaires-presomptifs">-</div><div class="label">Partenaires présomptifs</div></div>
-        <div class="card stat"><div class="value" id="v-capacite">-</div><div class="label">Capacité confirmée (équipes)</div></div>
+        <div class="card stat"><div class="value" id="v-capacite">-</div><div class="label">Capacité confirmée</div></div>
         <div class="card stat"><div class="value" id="v-ateliers-manquants">-</div><div class="label">Places manquantes</div></div>
         <div class="card stat"><div class="value" id="v-solde">-</div><div class="label">Solde budget réel</div></div>
-        <div class="card stat"><div class="value" id="v-mecenes">-</div><div class="label">Mécènes</div></div>
-        <div class="card stat"><div class="value" id="v-invitations">-</div><div class="label">Invités autorités</div></div>
-        <div class="card stat"><div class="value" id="v-entites">-</div><div class="label">Entités dans l'annuaire</div></div>
-        <div class="card stat"><div class="value" id="v-documents">-</div><div class="label">Documents catalogués</div></div>
-        <div class="card stat"><div class="value" id="v-factures">-</div><div class="label">Factures/reçus émis</div></div>
       </div>
-      <p class="hint" style="margin-top:12px">
-        Capacité potentielle si tous les partenaires présomptifs se confirment : <strong id="v-capacite-potentielle">-</strong> équipes.
-      </p>
     </div>
 
-    <!-- Reste à faire -->
+    <!-- Reste à faire : toujours visible, c'est le plus actionnable -->
     <div class="card">
-      <h3>Reste à faire</h3>
+      <h3 style="margin-top:0">Reste à faire</h3>
       <div id="reste-a-faire"><div class="hint">Chargement…</div></div>
     </div>
 
-    <!-- Calendrier indicatif -->
+    <!-- Détails partenaires/équipes -->
     <div class="card">
-      <h3>Calendrier</h3>
-      <p class="hint">Échéances-types calculées par rapport à la date de l'événement - indicatif, à ajuster selon l'édition.</p>
-      <table>
-        <thead><tr><th>Échéance</th><th>Date</th><th></th></tr></thead>
-        <tbody id="calendrier-body"><tr><td colspan="3" class="hint">Chargement…</td></tr></tbody>
-      </table>
-    </div>
-
-    <!-- Éditions -->
-    <div class="card">
-      <h3 id="form-edition-title">Ajouter une édition</h3>
-      <form class="inline-form" id="form-edition">
-        <input type="hidden" name="id" value="">
-        <div><label>Année</label><input name="annee" placeholder="2027" required></div>
-        <div><label>Thème</label><input name="theme" placeholder="Soigner, secourir, servir"></div>
-        <div><label>Date de l'événement</label><input name="date_evenement" type="date"></div>
-        <div><label>Lieu</label><input name="lieu" placeholder="Complexe Jacques Chirac, Montauban"></div>
-        <div><label>Objectif jeunes</label><input name="objectif_jeunes" type="number"></div>
-        <div><label>Objectif équipes</label><input name="objectif_equipes" type="number"></div>
-        <div><label>Équipes confirmées</label><input name="equipes_confirmees" type="number" placeholder="À mettre à jour au fil des inscriptions"></div>
-        <div><label>Objectif partenaires</label><input name="objectif_partenaires" type="number"></div>
-        <div style="display:flex;gap:8px">
-          <button type="submit" id="form-edition-submit">Ajouter</button>
-          <button type="button" class="secondary" id="form-edition-cancel" style="display:none" onclick="resetEditionForm()">Annuler</button>
+      <details>
+        <summary>Détail Partenaires et Ateliers</summary>
+        <div class="grid">
+          <div class="card stat"><div class="value" id="v-partenaires-confirmes">-</div><div class="label">Partenaires confirmés</div></div>
+          <div class="card stat"><div class="value" id="v-partenaires-presomptifs">-</div><div class="label">Partenaires présomptifs</div></div>
+          <div class="card stat"><div class="value" id="v-equipes-attendues">-</div><div class="label">Équipes attendues</div></div>
+          <div class="card stat"><div class="value" id="v-capacite-potentielle">-</div><div class="label">Capacité potentielle</div></div>
         </div>
-      </form>
+        <p class="section-hint">Capacité potentielle = si tous les partenaires présomptifs se confirment. Voir le détail complet dans <a href="partenaires.html">Partenaires et Ateliers</a>.</p>
+      </details>
     </div>
 
+    <!-- Détails budget / mécènes / autres modules -->
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 style="margin:0">Éditions</h3>
-        <button class="secondary" onclick="exportCSV('editions', editionsData)">Exporter CSV</button>
-      </div>
-      <table>
-        <thead><tr><th>Année</th><th>Thème</th><th>Date</th><th>Lieu</th><th>Statut</th><th></th></tr></thead>
-        <tbody id="editions-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
-      </table>
+      <details>
+        <summary>Détail Budget, Mécènes et autres modules</summary>
+        <div class="grid">
+          <div class="card stat"><div class="value" id="v-mecenes">-</div><div class="label">Mécènes</div></div>
+          <div class="card stat"><div class="value" id="v-invitations">-</div><div class="label">Invités autorités</div></div>
+          <div class="card stat"><div class="value" id="v-entites">-</div><div class="label">Entités dans l'annuaire</div></div>
+          <div class="card stat"><div class="value" id="v-documents">-</div><div class="label">Documents catalogués</div></div>
+          <div class="card stat"><div class="value" id="v-factures">-</div><div class="label">Factures/reçus émis</div></div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Calendrier -->
+    <div class="card">
+      <details>
+        <summary>Calendrier</summary>
+        <p class="section-hint">Échéances-types calculées par rapport à la date de l'événement - indicatif, à ajuster selon l'édition.</p>
+        <table>
+          <thead><tr><th>Échéance</th><th>Date</th><th></th></tr></thead>
+          <tbody id="calendrier-body"><tr><td colspan="3" class="hint">Chargement…</td></tr></tbody>
+        </table>
+      </details>
+    </div>
+
+    <!-- Gestion des éditions -->
+    <div class="card">
+      <details id="editions-details">
+        <summary>Gestion des éditions</summary>
+
+        <h4 id="form-edition-title">Ajouter une édition</h4>
+        <form class="inline-form" id="form-edition">
+          <input type="hidden" name="id" value="">
+          <div><label>Année</label><input name="annee" placeholder="2027" required></div>
+          <div><label>Thème</label><input name="theme" placeholder="Soigner, secourir, servir"></div>
+          <div><label>Date de l'événement</label><input name="date_evenement" type="date"></div>
+          <div><label>Lieu</label><input name="lieu" placeholder="Complexe Jacques Chirac, Montauban"></div>
+          <div><label>Objectif jeunes</label><input name="objectif_jeunes" type="number"></div>
+          <div><label>Objectif équipes</label><input name="objectif_equipes" type="number"></div>
+          <div><label>Équipes confirmées</label><input name="equipes_confirmees" type="number" placeholder="À mettre à jour au fil des inscriptions"></div>
+          <div><label>Objectif partenaires</label><input name="objectif_partenaires" type="number"></div>
+          <div style="display:flex;gap:8px">
+            <button type="submit" id="form-edition-submit">Ajouter</button>
+            <button type="button" class="secondary" id="form-edition-cancel" style="display:none" onclick="resetEditionForm()">Annuler</button>
+          </div>
+        </form>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+          <h4 style="margin:0">Éditions</h4>
+          <button class="secondary" onclick="exportCSV('editions', editionsData)">Exporter CSV</button>
+        </div>
+        <table>
+          <thead><tr><th>Année</th><th>Thème</th><th>Date</th><th>Lieu</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="editions-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
+        </table>
+      </details>
     </div>
   </main>
 
@@ -98,25 +125,25 @@
       if (!res.success) return;
       const d = res.data;
 
-      const editionCard = document.getElementById('edition-active-card');
       if (d.edition) {
-        editionCard.innerHTML = `
-          <div class="hint">Édition active</div>
-          <h2 style="margin:4px 0">${d.edition.annee} - ${d.edition.theme || 'Thème non défini'}</h2>
-          <p style="margin:0;color:var(--muted)">${d.edition.date_evenement || 'Date non définie'} · ${d.edition.lieu || 'Lieu non défini'}</p>`;
+        document.getElementById('hero-title').textContent = d.edition.annee + ' - ' + (d.edition.theme || 'Thème non défini');
+        document.getElementById('hero-meta').textContent = (d.edition.date_evenement || 'Date non définie') + ' · ' + (d.edition.lieu || 'Lieu non défini');
       } else {
-        editionCard.innerHTML = `<div class="hint">Aucune édition active pour l'instant. Ajoutez une édition ci-dessous puis marquez-la comme active.</div>`;
+        document.getElementById('hero-title').textContent = 'Aucune édition active';
+        document.getElementById('hero-meta').innerHTML = 'Ouvrez "Gestion des éditions" ci-dessous pour en créer une et la marquer active.';
       }
+      document.getElementById('hero-jours').textContent = d.joursRestants === null ? '-' : d.joursRestants;
 
-      document.getElementById('v-jours').textContent = d.joursRestants === null ? '-' : d.joursRestants;
-      document.getElementById('v-equipes-attendues').textContent = d.equipes.attendues || '-';
       document.getElementById('v-equipes-confirmees').textContent = d.equipes.confirmees || '-';
-      document.getElementById('v-partenaires-confirmes').textContent = d.partenaires.confirmes;
-      document.getElementById('v-partenaires-presomptifs').textContent = d.partenaires.presomptifs;
       document.getElementById('v-capacite').textContent = d.ateliers.capaciteConfirmee;
       document.getElementById('v-ateliers-manquants').textContent = d.ateliers.manquants;
-      document.getElementById('v-capacite-potentielle').textContent = d.ateliers.capaciteTotalePotentielle;
       document.getElementById('v-solde').textContent = euros(d.budget.reel.solde);
+
+      document.getElementById('v-partenaires-confirmes').textContent = d.partenaires.confirmes;
+      document.getElementById('v-partenaires-presomptifs').textContent = d.partenaires.presomptifs;
+      document.getElementById('v-equipes-attendues').textContent = d.equipes.attendues || '-';
+      document.getElementById('v-capacite-potentielle').textContent = d.ateliers.capaciteTotalePotentielle;
+
       document.getElementById('v-mecenes').textContent = d.mecenes.total;
       document.getElementById('v-invitations').textContent = d.invitations.total;
       document.getElementById('v-entites').textContent = d.entites.total;
@@ -169,6 +196,7 @@
     function editEdition(id) {
       const e = editionsData.find(x => x.id === id);
       if (!e) return;
+      document.getElementById('editions-details').open = true;
       const form = document.getElementById('form-edition');
       form.id.value = e.id;
       form.annee.value = e.annee || '';
