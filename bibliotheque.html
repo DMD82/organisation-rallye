@@ -51,7 +51,21 @@
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <h3 style="margin:0">Documents</h3>
-        <button class="secondary" onclick="exportCSV('bibliotheque', documentsData)">Exporter CSV</button>
+        <div style="display:flex;gap:8px">
+          <button class="secondary" onclick="showImportModal({
+            title: 'Bibliothèque',
+            action: 'documents.create',
+            fields: [
+              {key:'titre', label:'Titre', required:true},
+              {key:'categorie', label:'Catégorie'},
+              {key:'type', label:'Type (modele/archive_edition)'},
+              {key:'lien_drive', label:'Lien Drive', required:true},
+              {key:'notes', label:'Notes'}
+            ],
+            onDone: loadDocuments
+          })">Importer</button>
+          <button class="secondary" onclick="exportCSV('bibliotheque', documentsData)">Exporter CSV</button>
+        </div>
       </div>
       <table>
         <thead><tr><th>Titre</th><th>Catégorie</th><th>Type</th><th>Ajouté le</th><th></th></tr></thead>

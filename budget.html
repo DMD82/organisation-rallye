@@ -61,11 +61,27 @@
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <h3 style="margin:0">Mécènes</h3>
-          <button class="secondary" onclick="exportCSV('mecenes', mecenesData)">Exporter CSV</button>
+          <div style="display:flex;gap:8px">
+            <button class="secondary" onclick="showImportModal({
+              title: 'Mécènes',
+              action: 'budget.mecenes.create',
+              fields: [
+                {key:'nom_entite', label:'Entité', required:true},
+                {key:'contact_nom', label:'Contact'},
+                {key:'contact_email', label:'Email'},
+                {key:'montant_envisage', label:'Montant envisagé'},
+                {key:'montant_promis', label:'Montant promis'},
+                {key:'montant_recu', label:'Montant reçu'},
+                {key:'statut', label:'Statut'}
+              ],
+              onDone: loadMecenes
+            })">Importer</button>
+            <button class="secondary" onclick="exportCSV('mecenes', mecenesData)">Exporter CSV</button>
+          </div>
         </div>
         <table>
-          <thead><tr><th>Entité</th><th>Contact</th><th>Envisagé</th><th>Promis</th><th>Reçu</th><th>Statut</th></tr></thead>
-          <tbody id="mecenes-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
+          <thead><tr><th>Entité</th><th>Contact</th><th>Envisagé</th><th>Promis</th><th>Reçu</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="mecenes-body"><tr><td colspan="7" class="hint">Chargement…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -88,11 +104,25 @@
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <h3 style="margin:0">Lignes budgétaires</h3>
-          <button class="secondary" onclick="exportCSV('lignes-budgetaires', lignesData)">Exporter CSV</button>
+          <div style="display:flex;gap:8px">
+            <button class="secondary" onclick="showImportModal({
+              title: 'Lignes budgétaires',
+              action: 'budget.lignes.create',
+              fields: [
+                {key:'categorie', label:'Catégorie', required:true},
+                {key:'poste', label:'Poste'},
+                {key:'type', label:'Type (recette/depense)'},
+                {key:'montant_prevu', label:'Montant prévu'},
+                {key:'montant_reel', label:'Montant réel'}
+              ],
+              onDone: loadLignes
+            })">Importer</button>
+            <button class="secondary" onclick="exportCSV('lignes-budgetaires', lignesData)">Exporter CSV</button>
+          </div>
         </div>
         <table>
-          <thead><tr><th>Catégorie</th><th>Poste</th><th>Type</th><th>Prévu</th><th>Réel</th></tr></thead>
-          <tbody id="lignes-body"><tr><td colspan="5" class="hint">Chargement…</td></tr></tbody>
+          <thead><tr><th>Catégorie</th><th>Poste</th><th>Type</th><th>Prévu</th><th>Réel</th><th></th></tr></thead>
+          <tbody id="lignes-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -163,7 +193,7 @@
     async function loadMecenes() {
       const res = await apiGet('budget.mecenes.list');
       const tbody = document.getElementById('mecenes-body');
-      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="6" class="hint">Aucun mécène pour l\'instant.</td></tr>'; return; }
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="7" class="hint">Aucun mécène pour l\'instant.</td></tr>'; return; }
       mecenesData = res.data;
       tbody.innerHTML = res.data.map(m => `
         <tr>
@@ -173,18 +203,20 @@
           <td>${euros(m.montant_promis)}</td>
           <td>${euros(m.montant_recu)}</td>
           <td><span class="badge ${m.statut}">${m.statut}</span></td>
+          <td><button class="secondary" onclick="showDocumentsModal('mecene', '${m.id}', '${(m.nom_entite || '').replace(/'/g, "\\'")}')">Documents</button></td>
         </tr>`).join('');
     }
 
     async function loadLignes() {
       const res = await apiGet('budget.lignes.list');
       const tbody = document.getElementById('lignes-body');
-      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="hint">Aucune ligne pour l\'instant.</td></tr>'; return; }
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="6" class="hint">Aucune ligne pour l\'instant.</td></tr>'; return; }
       lignesData = res.data;
       tbody.innerHTML = res.data.map(l => `
         <tr>
           <td>${l.categorie}</td><td>${l.poste || ''}</td><td>${l.type}</td>
           <td>${euros(l.montant_prevu)}</td><td>${euros(l.montant_reel)}</td>
+          <td><button class="secondary" onclick="showDocumentsModal('budget_ligne', '${l.id}', '${(l.poste || l.categorie || '').replace(/'/g, "\\'")}')">Documents</button></td>
         </tr>`).join('');
     }
 

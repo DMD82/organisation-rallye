@@ -35,11 +35,27 @@
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <h3 style="margin:0">Invités de l'édition</h3>
-        <button class="secondary" onclick="exportCSV('autorites-invites', invitationsData)">Exporter CSV</button>
+        <div style="display:flex;gap:8px">
+          <button class="secondary" id="btn-import-invitations" onclick="showImportModal({
+            title: 'Autorités et invités',
+            action: 'autorites.create',
+            fields: [
+              {key:'personne', label:'Personne', required:true},
+              {key:'fonction', label:'Fonction'},
+              {key:'nom_entite', label:'Entité'},
+              {key:'email', label:'Email'},
+              {key:'creneau', label:'Créneau'},
+              {key:'statut', label:'Statut'}
+            ],
+            defaults: { edition_id: editionActiveId },
+            onDone: loadInvitations
+          })">Importer</button>
+          <button class="secondary" onclick="exportCSV('autorites-invites', invitationsData)">Exporter CSV</button>
+        </div>
       </div>
       <table>
-        <thead><tr><th>Personne</th><th>Fonction</th><th>Entité</th><th>Créneau</th><th>Statut</th></tr></thead>
-        <tbody id="invitations-body"><tr><td colspan="5" class="hint">Chargement…</td></tr></tbody>
+        <thead><tr><th>Personne</th><th>Fonction</th><th>Entité</th><th>Créneau</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="invitations-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
       </table>
     </div>
   </main>
@@ -58,6 +74,7 @@
       if (!editionRes.success || !editionRes.data) {
         banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
         document.getElementById('form-invitation').querySelector('button').disabled = true;
+        document.getElementById('btn-import-invitations').disabled = true;
         return;
       }
       editionActiveId = editionRes.data.id;
@@ -68,7 +85,7 @@
     async function loadInvitations() {
       const res = await apiGet('autorites.list', { edition_id: editionActiveId });
       const tbody = document.getElementById('invitations-body');
-      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="hint">Aucun invité pour l\'instant.</td></tr>'; return; }
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="6" class="hint">Aucun invité pour l\'instant.</td></tr>'; return; }
       invitationsData = res.data;
       tbody.innerHTML = res.data.map(i => `
         <tr>
@@ -77,6 +94,7 @@
           <td>${i.entite_nom || ''}</td>
           <td>${i.creneau || ''}</td>
           <td><span class="badge ${i.statut}">${i.statut}</span></td>
+          <td><button class="secondary" onclick="showDocumentsModal('invitation', '${i.id}', '${(i.personne || '').replace(/'/g, "\\'")}')">Documents</button></td>
         </tr>`).join('');
     }
 

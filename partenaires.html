@@ -43,11 +43,27 @@
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <h3 style="margin:0">Partenaires de l'édition</h3>
-        <button class="secondary" onclick="exportCSV('partenaires', partenariatsData)">Exporter CSV</button>
+        <div style="display:flex;gap:8px">
+          <button class="secondary" id="btn-import-partenaires" onclick="showImportModal({
+            title: 'Partenaires et Ateliers',
+            action: 'partenaires.create',
+            fields: [
+              {key:'nom_entite', label:'Entité', required:true},
+              {key:'numero_atelier', label:'N° atelier'},
+              {key:'capacite_equipes', label:'Capacité (équipes)'},
+              {key:'presentation_texte', label:'Présentation'},
+              {key:'besoins_logistiques', label:'Besoins logistiques'},
+              {key:'statut', label:'Statut'}
+            ],
+            defaults: { edition_id: editionActiveId },
+            onDone: loadPartenariats
+          })">Importer</button>
+          <button class="secondary" onclick="exportCSV('partenaires', partenariatsData)">Exporter CSV</button>
+        </div>
       </div>
       <table>
-        <thead><tr><th>N° atelier</th><th>Entité</th><th>Capacité</th><th>Finance</th><th>Statut</th></tr></thead>
-        <tbody id="partenariats-body"><tr><td colspan="5" class="hint">Chargement…</td></tr></tbody>
+        <thead><tr><th>N° atelier</th><th>Entité</th><th>Capacité</th><th>Finance</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="partenariats-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
       </table>
     </div>
   </main>
@@ -66,6 +82,7 @@
       if (!editionRes.success || !editionRes.data) {
         banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
         document.getElementById('form-partenariat').querySelector('button').disabled = true;
+        document.getElementById('btn-import-partenaires').disabled = true;
         return;
       }
       editionActiveId = editionRes.data.id;
@@ -76,7 +93,7 @@
     async function loadPartenariats() {
       const res = await apiGet('partenaires.list', { edition_id: editionActiveId });
       const tbody = document.getElementById('partenariats-body');
-      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="hint">Aucun partenaire pour l\'instant.</td></tr>'; return; }
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="6" class="hint">Aucun partenaire pour l\'instant.</td></tr>'; return; }
       partenariatsData = res.data;
       tbody.innerHTML = res.data.map(p => `
         <tr>
@@ -85,6 +102,7 @@
           <td>${p.capacite_equipes || ''}</td>
           <td>${p.finance_aussi === true || p.finance_aussi === 'TRUE' ? 'Oui' : 'Non'}</td>
           <td><span class="badge ${p.statut}">${p.statut}</span></td>
+          <td><button class="secondary" onclick="showDocumentsModal('partenariat', '${p.id}', '${(p.entite_nom || '').replace(/'/g, "\\'")}')">Documents</button></td>
         </tr>`).join('');
     }
 
