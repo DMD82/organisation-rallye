@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Budget & Mécènes</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="tabs">
+      <a href="#" class="tab-link active" data-tab="apercu">Aperçu</a>
+      <a href="#" class="tab-link" data-tab="mecenes">Mécènes</a>
+      <a href="#" class="tab-link" data-tab="lignes">Lignes budgétaires</a>
+      <a href="#" class="tab-link" data-tab="factures">Factures &amp; reçus</a>
+    </div>
+
+    <!-- Aperçu -->
+    <section id="tab-apercu">
+      <div class="grid">
+        <div class="card stat"><div class="value" id="stat-recettes-reel">-</div><div class="label">Recettes réelles</div></div>
+        <div class="card stat"><div class="value" id="stat-depenses-reel">-</div><div class="label">Dépenses réelles</div></div>
+        <div class="card stat"><div class="value" id="stat-solde-reel">-</div><div class="label">Solde réel</div></div>
+        <div class="card stat"><div class="value" id="stat-mecenat-recu">-</div><div class="label">Mécénat reçu</div></div>
+      </div>
+      <div class="card">
+        <h3>Prévisionnel vs réel</h3>
+        <table>
+          <thead><tr><th></th><th>Prévu</th><th>Réel</th></tr></thead>
+          <tbody>
+            <tr><td>Recettes</td><td id="p-recettes">-</td><td id="r-recettes">-</td></tr>
+            <tr><td>Dépenses</td><td id="p-depenses">-</td><td id="r-depenses">-</td></tr>
+            <tr><td><strong>Solde</strong></td><td id="p-solde">-</td><td id="r-solde">-</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Mécènes -->
+    <section id="tab-mecenes" style="display:none">
+      <div class="card">
+        <h3>Ajouter un mécène / bienfaiteur</h3>
+        <form class="inline-form" id="form-mecene">
+          <div><label>Entité</label><input name="nom_entite" required></div>
+          <div><label>Contact</label><input name="contact_nom"></div>
+          <div><label>Email</label><input name="contact_email" type="email"></div>
+          <div><label>Montant envisagé (€)</label><input name="montant_envisage" type="number" step="0.01"></div>
+          <div><label>Statut</label>
+            <select name="statut">
+              <option value="sollicite">Sollicité</option>
+              <option value="promis">Promis</option>
+              <option value="recu">Reçu</option>
+              <option value="decline">Décliné</option>
+            </select>
+          </div>
+          <div><button type="submit">Ajouter</button></div>
+        </form>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Entité</th><th>Contact</th><th>Envisagé</th><th>Promis</th><th>Reçu</th><th>Statut</th></tr></thead>
+          <tbody id="mecenes-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Lignes budgétaires -->
+    <section id="tab-lignes" style="display:none">
+      <div class="card">
+        <h3>Ajouter une ligne</h3>
+        <form class="inline-form" id="form-ligne">
+          <div><label>Catégorie</label><input name="categorie" placeholder="Équipement, Repas..." required></div>
+          <div><label>Poste</label><input name="poste" placeholder="Casquettes, écussons..."></div>
+          <div><label>Type</label>
+            <select name="type"><option value="depense">Dépense</option><option value="recette">Recette</option></select>
+          </div>
+          <div><label>Montant prévu (€)</label><input name="montant_prevu" type="number" step="0.01"></div>
+          <div><label>Montant réel (€)</label><input name="montant_reel" type="number" step="0.01"></div>
+          <div><button type="submit">Ajouter</button></div>
+        </form>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Catégorie</th><th>Poste</th><th>Type</th><th>Prévu</th><th>Réel</th></tr></thead>
+          <tbody id="lignes-body"><tr><td colspan="5" class="hint">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Factures -->
+    <section id="tab-factures" style="display:none">
+      <div class="card">
+        <h3>Nouvelle facture / reçu fiscal</h3>
+        <form class="inline-form" id="form-facture">
+          <div><label>Type</label>
+            <select name="type"><option value="facture">Facture</option><option value="recu_fiscal">Reçu fiscal</option></select>
+          </div>
+          <div><label>Destinataire</label><input name="destinataire_nom" required></div>
+          <div><label>Adresse</label><input name="destinataire_adresse"></div>
+          <div><label>Objet</label><input name="objet" placeholder="Participation au Rallye Citoyen 2027"></div>
+          <div><label>Montant (€)</label><input name="montant" type="number" step="0.01" required></div>
+          <div><button type="submit">Créer</button></div>
+        </form>
+        <p class="hint">La génération du document (Google Docs) nécessite que les modèles soient configurés dans les Propriétés du script (DOC_TEMPLATE_FACTURE_ID, DOC_TEMPLATE_RECU_ID, DRIVE_FOLDER_FACTURES_ID).</p>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>N°</th><th>Type</th><th>Destinataire</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="factures-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('budget');
+
+    document.querySelectorAll('.tab-link').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        ['apercu', 'mecenes', 'lignes', 'factures'].forEach(t => {
+          document.getElementById('tab-' + t).style.display = t === link.dataset.tab ? '' : 'none';
+        });
+      });
+    });
+
+    async function loadApercu() {
+      const res = await apiGet('budget.bilan');
+      if (!res.success) return;
+      const d = res.data;
+      document.getElementById('stat-recettes-reel').textContent = euros(d.reel.recettes);
+      document.getElementById('stat-depenses-reel').textContent = euros(d.reel.depenses);
+      document.getElementById('stat-solde-reel').textContent = euros(d.reel.solde);
+      document.getElementById('stat-mecenat-recu').textContent = euros(d.mecenat.recu);
+      document.getElementById('p-recettes').textContent = euros(d.prevu.recettes);
+      document.getElementById('p-depenses').textContent = euros(d.prevu.depenses);
+      document.getElementById('p-solde').textContent = euros(d.prevu.solde);
+      document.getElementById('r-recettes').textContent = euros(d.reel.recettes);
+      document.getElementById('r-depenses').textContent = euros(d.reel.depenses);
+      document.getElementById('r-solde').textContent = euros(d.reel.solde);
+    }
+
+    async function loadMecenes() {
+      const res = await apiGet('budget.mecenes.list');
+      const tbody = document.getElementById('mecenes-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="6" class="hint">Aucun mécène pour l\'instant.</td></tr>'; return; }
+      tbody.innerHTML = res.data.map(m => `
+        <tr>
+          <td>${m.nom_entite}</td>
+          <td>${m.contact_nom || ''}</td>
+          <td>${euros(m.montant_envisage)}</td>
+          <td>${euros(m.montant_promis)}</td>
+          <td>${euros(m.montant_recu)}</td>
+          <td><span class="badge ${m.statut}">${m.statut}</span></td>
+        </tr>`).join('');
+    }
+
+    async function loadLignes() {
+      const res = await apiGet('budget.lignes.list');
+      const tbody = document.getElementById('lignes-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="hint">Aucune ligne pour l\'instant.</td></tr>'; return; }
+      tbody.innerHTML = res.data.map(l => `
+        <tr>
+          <td>${l.categorie}</td><td>${l.poste || ''}</td><td>${l.type}</td>
+          <td>${euros(l.montant_prevu)}</td><td>${euros(l.montant_reel)}</td>
+        </tr>`).join('');
+    }
+
+    async function loadFactures() {
+      const res = await apiGet('budget.factures.list');
+      const tbody = document.getElementById('factures-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="6" class="hint">Aucun document pour l\'instant.</td></tr>'; return; }
+      tbody.innerHTML = res.data.map(f => `
+        <tr>
+          <td>${f.numero}</td><td>${f.type}</td><td>${f.destinataire_nom}</td>
+          <td>${euros(f.montant)}</td>
+          <td><span class="badge ${f.statut}">${f.statut}</span></td>
+          <td>${f.doc_url
+            ? `<a class="btn secondary" href="${f.doc_url}" target="_blank">Ouvrir</a>`
+            : `<button class="secondary" onclick="generateDoc('${f.id}')">Générer</button>`}</td>
+        </tr>`).join('');
+    }
+
+    async function generateDoc(id) {
+      const res = await apiPost('budget.factures.generateDoc', { id: id });
+      if (res.success) { loadFactures(); }
+      else alert('Erreur : ' + res.error.message);
+    }
+
+    document.getElementById('form-mecene').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const res = await apiPost('budget.mecenes.create', payload);
+      if (res.success) { e.target.reset(); loadMecenes(); loadApercu(); }
+    });
+
+    document.getElementById('form-ligne').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const res = await apiPost('budget.lignes.create', payload);
+      if (res.success) { e.target.reset(); loadLignes(); loadApercu(); }
+    });
+
+    document.getElementById('form-facture').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const res = await apiPost('budget.factures.create', payload);
+      if (res.success) { e.target.reset(); loadFactures(); }
+    });
+
+    loadApercu(); loadMecenes(); loadLignes(); loadFactures();
+  </script>
+</body>
+</html>

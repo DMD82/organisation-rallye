@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Connexion</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <main style="max-width:420px;margin-top:80px">
+    <div class="card" style="text-align:center">
+      <h1 style="color:var(--navy)">Rallye Citoyen</h1>
+      <p class="hint">Outil d'organisation - accès réservé à l'équipe.</p>
+      <div id="g_id_signin" style="display:flex;justify-content:center;margin-top:20px"></div>
+      <p id="error" style="color:var(--danger);margin-top:16px;display:none"></p>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    // Remplacer par le Client ID OAuth créé dans Google Cloud Console
+    // (public par nature - ce n'est pas un secret, contrairement à un
+    // Client Secret qui, lui, ne doit jamais apparaître ici).
+    const GOOGLE_CLIENT_ID = 'REMPLACER_PAR_VOTRE_CLIENT_ID.apps.googleusercontent.com';
+
+    window.onload = function () {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse
+      });
+      google.accounts.id.renderButton(
+        document.getElementById('g_id_signin'),
+        { theme: 'outline', size: 'large', text: 'signin_with', width: 320 }
+      );
+    };
+
+    async function handleCredentialResponse(response) {
+      const result = await apiPost('auth.login', { googleIdToken: response.credential });
+      if (result.success) {
+        setSession(result.data.token, { email: result.data.email, nom: result.data.nom, role: result.data.role });
+        window.location.href = 'budget.html';
+      } else {
+        const el = document.getElementById('error');
+        el.style.display = 'block';
+        el.textContent = result.error.code === 'AUTH_FORBIDDEN'
+          ? "Ce compte Google n'est pas autorisé à accéder à l'outil."
+          : "Erreur de connexion : " + result.error.message;
+      }
+    }
+  </script>
+</body>
+</html>
