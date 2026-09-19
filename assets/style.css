@@ -217,3 +217,23 @@ details[open] > summary { margin-bottom: 14px; }
 
 .section-hint { font-size: 0.8rem; color: var(--muted); margin: -8px 0 14px; }
 .hint { color: var(--muted); font-size: 0.8rem; }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 27, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.modal-box {
+  background: #fff;
+  border-radius: 10px;
+  padding: 24px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
