@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Autorités et invités</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card" id="edition-banner"><div class="hint">Chargement de l'édition active…</div></div>
+
+    <div class="card">
+      <h3>Ajouter un invité</h3>
+      <form class="inline-form" id="form-invitation">
+        <div><label>Personne</label><input name="personne" placeholder="Nom complet" required></div>
+        <div><label>Fonction</label><input name="fonction" placeholder="Préfet, DASEN, chef de corps..."></div>
+        <div><label>Entité / structure</label><input name="nom_entite" placeholder="Préfecture de Tarn-et-Garonne"></div>
+        <div><label>Email</label><input name="email" type="email"></div>
+        <div><label>Créneau</label><input name="creneau" placeholder="Cérémonie d'ouverture 9h-10h30"></div>
+        <div><label>Statut</label>
+          <select name="statut">
+            <option value="a_inviter">À inviter</option>
+            <option value="invite">Invité</option>
+            <option value="confirme">Confirmé</option>
+            <option value="decline">Décliné</option>
+          </select>
+        </div>
+        <div><button type="submit">Ajouter</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Invités de l'édition</h3>
+        <button class="secondary" onclick="exportCSV('autorites-invites', invitationsData)">Exporter CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>Personne</th><th>Fonction</th><th>Entité</th><th>Créneau</th><th>Statut</th></tr></thead>
+        <tbody id="invitations-body"><tr><td colspan="5" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('autorites.html');
+
+    let invitationsData = [];
+    let editionActiveId = null;
+
+    async function init() {
+      const editionRes = await apiGet('generale.editions.active');
+      const banner = document.getElementById('edition-banner');
+      if (!editionRes.success || !editionRes.data) {
+        banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
+        document.getElementById('form-invitation').querySelector('button').disabled = true;
+        return;
+      }
+      editionActiveId = editionRes.data.id;
+      banner.innerHTML = `<div class="hint">Édition active</div><h2 style="margin:4px 0">${editionRes.data.annee} - ${editionRes.data.theme || ''}</h2>`;
+      loadInvitations();
+    }
+
+    async function loadInvitations() {
+      const res = await apiGet('autorites.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('invitations-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="hint">Aucun invité pour l\'instant.</td></tr>'; return; }
+      invitationsData = res.data;
+      tbody.innerHTML = res.data.map(i => `
+        <tr>
+          <td>${i.personne}</td>
+          <td>${i.fonction || ''}</td>
+          <td>${i.entite_nom || ''}</td>
+          <td>${i.creneau || ''}</td>
+          <td><span class="badge ${i.statut}">${i.statut}</span></td>
+        </tr>`).join('');
+    }
+
+    document.getElementById('form-invitation').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.edition_id = editionActiveId;
+      const res = await apiPost('autorites.create', payload);
+      if (res.success) { e.target.reset(); loadInvitations(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    init();
+  </script>
+</body>
+</html>

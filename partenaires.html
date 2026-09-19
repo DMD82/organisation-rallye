@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Partenaires et Ateliers</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card" id="edition-banner"><div class="hint">Chargement de l'édition active…</div></div>
+
+    <div class="card">
+      <h3>Ajouter un partenaire / atelier</h3>
+      <form class="inline-form" id="form-partenariat">
+        <div><label>Entité</label><input name="nom_entite" required></div>
+        <div><label>N° atelier</label><input name="numero_atelier" placeholder="Ex. 12"></div>
+        <div><label>Capacité (équipes)</label><input name="capacite_equipes" placeholder="Ex. 2 équipes"></div>
+        <div><label>Finance aussi ?</label>
+          <select name="finance_aussi"><option value="false">Non</option><option value="true">Oui</option></select>
+        </div>
+        <div><label>Statut</label>
+          <select name="statut">
+            <option value="a_solliciter">À solliciter</option>
+            <option value="sollicite">Sollicité</option>
+            <option value="confirme">Confirmé</option>
+            <option value="decline">Décliné</option>
+          </select>
+        </div>
+        <div style="grid-column:1/-1"><label>Présentation de la structure</label>
+          <input name="presentation_texte" placeholder="Texte affiché dans le carnet participant">
+        </div>
+        <div style="grid-column:1/-1"><label>Besoins logistiques</label>
+          <input name="besoins_logistiques" placeholder="Tables, chaises, électricité...">
+        </div>
+        <div><button type="submit">Ajouter</button></div>
+      </form>
+      <p class="hint">Si l'entité existe déjà dans l'annuaire (ex. déjà mécène), elle est automatiquement réutilisée - pas de doublon créé.</p>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Partenaires de l'édition</h3>
+        <button class="secondary" onclick="exportCSV('partenaires', partenariatsData)">Exporter CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>N° atelier</th><th>Entité</th><th>Capacité</th><th>Finance</th><th>Statut</th></tr></thead>
+        <tbody id="partenariats-body"><tr><td colspan="5" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('partenaires.html');
+
+    let partenariatsData = [];
+    let editionActiveId = null;
+
+    async function init() {
+      const editionRes = await apiGet('generale.editions.active');
+      const banner = document.getElementById('edition-banner');
+      if (!editionRes.success || !editionRes.data) {
+        banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
+        document.getElementById('form-partenariat').querySelector('button').disabled = true;
+        return;
+      }
+      editionActiveId = editionRes.data.id;
+      banner.innerHTML = `<div class="hint">Édition active</div><h2 style="margin:4px 0">${editionRes.data.annee} - ${editionRes.data.theme || ''}</h2>`;
+      loadPartenariats();
+    }
+
+    async function loadPartenariats() {
+      const res = await apiGet('partenaires.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('partenariats-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="hint">Aucun partenaire pour l\'instant.</td></tr>'; return; }
+      partenariatsData = res.data;
+      tbody.innerHTML = res.data.map(p => `
+        <tr>
+          <td>${p.numero_atelier || ''}</td>
+          <td>${p.entite_nom}</td>
+          <td>${p.capacite_equipes || ''}</td>
+          <td>${p.finance_aussi === true || p.finance_aussi === 'TRUE' ? 'Oui' : 'Non'}</td>
+          <td><span class="badge ${p.statut}">${p.statut}</span></td>
+        </tr>`).join('');
+    }
+
+    document.getElementById('form-partenariat').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.edition_id = editionActiveId;
+      const res = await apiPost('partenaires.create', payload);
+      if (res.success) { e.target.reset(); loadPartenariats(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    init();
+  </script>
+</body>
+</html>

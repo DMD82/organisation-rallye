@@ -21,6 +21,8 @@
       <div class="grid">
         <div class="card stat"><div class="value" id="v-solde">-</div><div class="label">Solde budget réel</div></div>
         <div class="card stat"><div class="value" id="v-mecenes">-</div><div class="label">Mécènes</div></div>
+        <div class="card stat"><div class="value" id="v-partenaires">-</div><div class="label">Partenaires/ateliers</div></div>
+        <div class="card stat"><div class="value" id="v-invitations">-</div><div class="label">Invités autorités</div></div>
         <div class="card stat"><div class="value" id="v-entites">-</div><div class="label">Entités dans l'annuaire</div></div>
         <div class="card stat"><div class="value" id="v-documents">-</div><div class="label">Documents catalogués</div></div>
         <div class="card stat"><div class="value" id="v-factures">-</div><div class="label">Factures/reçus émis</div></div>
@@ -78,6 +80,8 @@
 
       document.getElementById('v-solde').textContent = euros(d.budget.reel.solde);
       document.getElementById('v-mecenes').textContent = d.mecenes.total;
+      document.getElementById('v-partenaires').textContent = d.partenariats.total;
+      document.getElementById('v-invitations').textContent = d.invitations.total;
       document.getElementById('v-entites').textContent = d.entites.total;
       document.getElementById('v-documents').textContent = d.documents.total;
       document.getElementById('v-factures').textContent = d.factures.total;
