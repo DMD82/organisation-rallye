@@ -61,6 +61,6 @@ function renderTopbar(activeModule) {
   el.innerHTML = `
     <h1>Rallye Citoyen - Organisation</h1>
     <div class="user">${user ? user.nom + ' · ' + user.role : ''}
-      <button class="secondary" style="margin-left:12px" onclick="clearSession();location.href='index.html'">Déconnexion</button>
+      <button class="topbar-logout" onclick="clearSession();location.href='index.html'">Déconnexion</button>
     </div>`;
 }
