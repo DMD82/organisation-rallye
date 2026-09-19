@@ -80,6 +80,8 @@ function exportCSV(filename, rows) {
 
 const NAV_PAGES = [
   { href: 'generale.html', label: 'Générale' },
+  { href: 'partenaires.html', label: 'Partenaires et Ateliers' },
+  { href: 'autorites.html', label: 'Autorités et invités' },
   { href: 'budget.html', label: 'Budget et Mécènes' },
   { href: 'bibliotheque.html', label: 'Bibliothèque' }
 ];

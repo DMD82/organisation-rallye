@@ -120,9 +120,9 @@ th {
   font-size: 0.75rem;
   font-weight: 600;
 }
-.badge.sollicite, .badge.brouillon { background: #eef1f5; color: var(--muted); }
-.badge.promis, .badge.emise { background: #fff4e0; color: var(--warn); }
-.badge.recu, .badge.payee { background: #e6f4ea; color: var(--ok); }
+.badge.sollicite, .badge.brouillon, .badge.a_solliciter, .badge.a_inviter { background: #eef1f5; color: var(--muted); }
+.badge.promis, .badge.emise, .badge.invite { background: #fff4e0; color: var(--warn); }
+.badge.recu, .badge.payee, .badge.confirme { background: #e6f4ea; color: var(--ok); }
 .badge.decline, .badge.annulee { background: #fdecea; color: var(--danger); }
 
 button, .btn {
