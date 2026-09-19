@@ -19,14 +19,34 @@
     <div class="card">
       <h3>Vision d'ensemble</h3>
       <div class="grid">
+        <div class="card stat"><div class="value" id="v-jours">-</div><div class="label">Jours restants</div></div>
+        <div class="card stat"><div class="value" id="v-partenaires">-</div><div class="label">Partenaires</div></div>
+        <div class="card stat"><div class="value" id="v-ateliers">-</div><div class="label">Ateliers assignés</div></div>
+        <div class="card stat"><div class="value" id="v-ateliers-manquants">-</div><div class="label">Ateliers non confirmés</div></div>
+        <div class="card stat"><div class="value" id="v-equipes">-</div><div class="label">Équipes (objectif)</div></div>
         <div class="card stat"><div class="value" id="v-solde">-</div><div class="label">Solde budget réel</div></div>
         <div class="card stat"><div class="value" id="v-mecenes">-</div><div class="label">Mécènes</div></div>
-        <div class="card stat"><div class="value" id="v-partenaires">-</div><div class="label">Partenaires/ateliers</div></div>
         <div class="card stat"><div class="value" id="v-invitations">-</div><div class="label">Invités autorités</div></div>
         <div class="card stat"><div class="value" id="v-entites">-</div><div class="label">Entités dans l'annuaire</div></div>
         <div class="card stat"><div class="value" id="v-documents">-</div><div class="label">Documents catalogués</div></div>
         <div class="card stat"><div class="value" id="v-factures">-</div><div class="label">Factures/reçus émis</div></div>
       </div>
+    </div>
+
+    <!-- Reste à faire -->
+    <div class="card">
+      <h3>Reste à faire</h3>
+      <div id="reste-a-faire"><div class="hint">Chargement…</div></div>
+    </div>
+
+    <!-- Calendrier indicatif -->
+    <div class="card">
+      <h3>Calendrier</h3>
+      <p class="hint">Échéances-types calculées par rapport à la date de l'événement - indicatif, à ajuster selon l'édition.</p>
+      <table>
+        <thead><tr><th>Échéance</th><th>Date</th><th></th></tr></thead>
+        <tbody id="calendrier-body"><tr><td colspan="3" class="hint">Chargement…</td></tr></tbody>
+      </table>
     </div>
 
     <!-- Éditions -->
@@ -78,13 +98,36 @@
         editionCard.innerHTML = `<div class="hint">Aucune édition active pour l'instant. Ajoutez une édition ci-dessous puis marquez-la comme active.</div>`;
       }
 
+      document.getElementById('v-jours').textContent = d.joursRestants === null ? '-' : d.joursRestants;
+      document.getElementById('v-partenaires').textContent = d.partenariats.total;
+      document.getElementById('v-ateliers').textContent = d.ateliers.total;
+      document.getElementById('v-ateliers-manquants').textContent = d.ateliers.manquants;
+      document.getElementById('v-equipes').textContent = d.equipes.objectif || '-';
       document.getElementById('v-solde').textContent = euros(d.budget.reel.solde);
       document.getElementById('v-mecenes').textContent = d.mecenes.total;
-      document.getElementById('v-partenaires').textContent = d.partenariats.total;
       document.getElementById('v-invitations').textContent = d.invitations.total;
       document.getElementById('v-entites').textContent = d.entites.total;
       document.getElementById('v-documents').textContent = d.documents.total;
       document.getElementById('v-factures').textContent = d.factures.total;
+
+      const resteEl = document.getElementById('reste-a-faire');
+      if (!d.resteAFaire || !d.resteAFaire.length) {
+        resteEl.innerHTML = '<div class="hint">Rien à signaler pour l\'instant.</div>';
+      } else {
+        resteEl.innerHTML = '<ul style="margin:0;padding-left:20px">' +
+          d.resteAFaire.map(item => `<li style="margin-bottom:6px">${item}</li>`).join('') + '</ul>';
+      }
+
+      const calBody = document.getElementById('calendrier-body');
+      if (!d.calendrier || !d.calendrier.length) {
+        calBody.innerHTML = '<tr><td colspan="3" class="hint">Renseignez la date de l\'événement sur l\'édition active pour voir le calendrier.</td></tr>';
+      } else {
+        calBody.innerHTML = d.calendrier.map(j => `
+          <tr style="${j.passe ? 'opacity:0.5' : ''}">
+            <td>${j.label}</td><td>${j.date}</td>
+            <td>${j.passe ? '<span class="badge decline">passé</span>' : ''}</td>
+          </tr>`).join('');
+      }
     }
 
     async function loadEditions() {
