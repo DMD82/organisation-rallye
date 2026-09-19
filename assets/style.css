@@ -117,6 +117,14 @@ button, .btn {
 button.secondary { background: transparent; color: var(--navy); border: 1px solid var(--border); }
 button:disabled { opacity: 0.5; cursor: default; }
 
+.topbar-logout {
+  margin-left: 12px;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+.topbar-logout:hover { background: rgba(255, 255, 255, 0.1); }
+
 input, select {
   padding: 7px 9px;
   border: 1px solid var(--border);
