@@ -6,7 +6,7 @@
  * en dur dans le code), fourni par le backend après connexion Google.
  */
 
-const API_URL = 'REMPLACER_PAR_URL_APPS_SCRIPT_/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbw5X3hiRPvmyokYL5lygNDDbWvgRyiPu_O8tcojisvcuSCUOuxqg1O3B1s_THDtqVBfSw/exec';
 
 function getToken() {
   return sessionStorage.getItem('rc_token');
