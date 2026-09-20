@@ -16,23 +16,68 @@
         formulaire, l'équipe organisatrice reviendra vers vous.
       </p>
       <form id="form-candidature">
-        <!-- Champ invisible anti-robot : ne rien saisir ici -->
         <div style="position:absolute;left:-9999px" aria-hidden="true">
           <label>Ne pas remplir<input name="hp" tabindex="-1" autocomplete="off"></label>
         </div>
 
+        <h4>Votre structure</h4>
         <div style="margin-bottom:12px">
           <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Nom de votre structure *</label>
           <input name="nom_entite" style="width:100%" required>
         </div>
+        <div class="inline-form" style="margin-bottom:12px">
+          <div><label>Votre nom</label><input name="contact_nom"></div>
+          <div><label>Votre email</label><input name="contact_email" type="email"></div>
+        </div>
         <div style="margin-bottom:12px">
           <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Présentation de votre structure</label>
-          <textarea name="presentation_texte" rows="4" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem" placeholder="Ce texte pourra être repris dans le carnet participant."></textarea>
+          <textarea name="presentation_texte" rows="3" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
+        </div>
+
+        <h4>Votre atelier</h4>
+        <div class="inline-form" style="margin-bottom:12px">
+          <div><label>Type d'atelier</label><input name="type_atelier" placeholder="Ludique, Sportif, Réflexion..."></div>
+          <div><label>Équipes simultanées</label><input name="capacite_equipes" placeholder="2"></div>
         </div>
         <div style="margin-bottom:12px">
-          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Besoins logistiques éventuels</label>
-          <input name="besoins_logistiques" style="width:100%" placeholder="Tables, chaises, électricité...">
+          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Description de l'atelier</label>
+          <textarea name="descriptif_atelier" rows="3" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
         </div>
+
+        <h4>Logistique</h4>
+        <div class="inline-form" style="margin-bottom:12px">
+          <div><label>Barnum ?</label><select name="venue_avec_barnum"><option value="false">Non</option><option value="true">Oui</option></select></div>
+          <div><label>Tables</label><input name="nb_tables" type="number" min="0"></div>
+          <div><label>Chaises</label><input name="nb_chaises" type="number" min="0"></div>
+          <div><label>Électricité ?</label><select name="electricite_necessaire"><option value="false">Non</option><option value="true">Oui</option></select></div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Besoins particuliers (dimension, sol...)</label>
+          <input name="contraintes_emplacement" style="width:100%">
+        </div>
+
+        <h4>Autres possibilités</h4>
+        <div class="inline-form" style="margin-bottom:12px">
+          <div><label>Possibilité de mécénat ?</label><select name="finance_aussi"><option value="false">Non</option><option value="true">Oui</option></select></div>
+          <div><label>Goodies pour les participants ?</label><select name="fournit_goodies"><option value="false">Non</option><option value="true">Oui</option></select></div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Une autorité de votre organisme à inviter ?</label>
+          <input name="autorite_a_inviter_nom" style="width:100%" placeholder="Nom et fonction">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Contact presse de votre structure</label>
+          <input name="contact_presse" style="width:100%">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Souhaitez-vous proposer des défis (fil rouge) ?</label>
+          <textarea name="defis_proposes" rows="2" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Précisions, commentaires</label>
+          <textarea name="notes" rows="2" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
+        </div>
+
         <button type="submit">Envoyer ma candidature</button>
       </form>
     </div>

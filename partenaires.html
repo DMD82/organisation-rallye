@@ -14,29 +14,74 @@
 
     <div class="card">
       <h3>Ajouter un partenaire / atelier</h3>
-      <form class="inline-form" id="form-partenariat">
-        <div><label>Entité</label><input name="nom_entite" required></div>
-        <div><label>N° atelier</label><input name="numero_atelier" placeholder="Ex. 12"></div>
-        <div><label>Capacité (nombre d'équipes)</label><input name="capacite_equipes" type="number" min="0" placeholder="2"></div>
-        <div><label>Logo (lien Drive/image)</label><input name="logo_url" placeholder="https://drive.google.com/..."></div>
-        <div><label>Finance aussi ?</label>
-          <select name="finance_aussi"><option value="false">Non</option><option value="true">Oui</option></select>
+      <form id="form-partenariat">
+        <h4 style="margin:0 0 8px">Entité et contact</h4>
+        <div class="inline-form" style="margin-bottom:16px">
+          <div><label>Entité</label><input name="nom_entite" required></div>
+          <div><label>Contact référent</label><input name="contact_nom"></div>
+          <div><label>Email du contact</label><input name="contact_email" type="email"></div>
+          <div><label>Logo (lien Drive/image)</label><input name="logo_url" placeholder="https://drive.google.com/..."></div>
         </div>
-        <div><label>Statut</label>
-          <select name="statut">
-            <option value="a_solliciter">À solliciter</option>
-            <option value="sollicite">Sollicité</option>
-            <option value="confirme">Confirmé</option>
-            <option value="decline">Décliné</option>
-          </select>
+        <div style="margin-bottom:16px">
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Présentation de la structure</label>
+          <input name="presentation_texte" style="width:100%" placeholder="Texte affiché dans le carnet participant">
         </div>
-        <div style="grid-column:1/-1"><label>Présentation de la structure</label>
-          <input name="presentation_texte" placeholder="Texte affiché dans le carnet participant">
+
+        <h4 style="margin:0 0 8px">Atelier</h4>
+        <div class="inline-form" style="margin-bottom:16px">
+          <div><label>Type d'atelier</label><input name="type_atelier" placeholder="Ludique, Sportif, Réflexion, Technique..."></div>
+          <div><label>N° atelier</label><input name="numero_atelier"></div>
+          <div><label>Capacité (équipes simultanées)</label><input name="capacite_equipes" placeholder="2"></div>
         </div>
-        <div style="grid-column:1/-1"><label>Besoins logistiques</label>
-          <input name="besoins_logistiques" placeholder="Tables, chaises, électricité...">
+        <div style="margin-bottom:16px">
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Descriptif de l'atelier</label>
+          <textarea name="descriptif_atelier" rows="3" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
         </div>
-        <div><button type="submit">Ajouter</button></div>
+
+        <h4 style="margin:0 0 8px">Logistique</h4>
+        <div class="inline-form" style="margin-bottom:16px">
+          <div><label>Vient avec un barnum ?</label><select name="venue_avec_barnum"><option value="false">Non</option><option value="true">Oui</option></select></div>
+          <div><label>Tables nécessaires</label><input name="nb_tables" type="number" min="0"></div>
+          <div><label>Chaises nécessaires</label><input name="nb_chaises" type="number" min="0"></div>
+          <div><label>Électricité nécessaire ?</label><select name="electricite_necessaire"><option value="false">Non</option><option value="true">Oui</option></select></div>
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Contraintes d'emplacement</label>
+          <input name="contraintes_emplacement" style="width:100%" placeholder="Sol en dur, dimension 10x10m, proximité parking...">
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Autres besoins logistiques</label>
+          <input name="besoins_logistiques" style="width:100%">
+        </div>
+
+        <h4 style="margin:0 0 8px">Statut</h4>
+        <div class="inline-form" style="margin-bottom:16px">
+          <div><label>Statut</label>
+            <select name="statut">
+              <option value="a_solliciter">À solliciter</option>
+              <option value="sollicite">Sollicité</option>
+              <option value="confirme">Confirmé</option>
+              <option value="decline">Décliné</option>
+            </select>
+          </div>
+        </div>
+
+        <h4 style="margin:0 0 8px">Opportunités (reprises depuis le formulaire partenaire)</h4>
+        <p class="section-hint">Ce que le partenaire signale lui-même - activable ensuite en un clic vers les autres modules, sans ressaisie.</p>
+        <div class="inline-form" style="margin-bottom:16px">
+          <div><label>Fournit des goodies ?</label><select name="fournit_goodies"><option value="false">Non</option><option value="true">Oui</option></select></div>
+          <div><label>Autorité à inviter</label><input name="autorite_a_inviter_nom" placeholder="Nom et fonction"></div>
+          <div><label>Contact de cette autorité</label><input name="autorite_a_inviter_contact"></div>
+          <div><label>Contact communication du partenaire</label><input name="contact_communication"></div>
+          <div><label>Contact presse du partenaire</label><input name="contact_presse"></div>
+          <div><label>Propose des défis fil rouge ?</label><select name="souhaite_proposer_defis"><option value="false">Non</option><option value="true">Oui</option></select></div>
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Défis proposés</label>
+          <textarea name="defis_proposes" rows="2" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
+        </div>
+
+        <button type="submit" id="btn-partenariat-submit">Ajouter</button>
       </form>
       <p class="hint">Si l'entité existe déjà dans l'annuaire (ex. déjà mécène), elle est automatiquement réutilisée - pas de doublon créé.</p>
     </div>
@@ -49,12 +94,25 @@
             title: 'Partenaires et Ateliers',
             action: 'partenaires.create',
             fields: [
-              {key:'nom_entite', label:'Entité', required:true},
-              {key:'numero_atelier', label:'N° atelier'},
-              {key:'capacite_equipes', label:'Capacité (équipes)'},
-              {key:'presentation_texte', label:'Présentation'},
-              {key:'besoins_logistiques', label:'Besoins logistiques'},
-              {key:'statut', label:'Statut'}
+              {key:'nom_entite', label:'Nom entite', required:true},
+              {key:'contact_nom', label:'Nom du contact referent'},
+              {key:'contact_email', label:'Adresse mail du contact referent'},
+              {key:'presentation_texte', label:'Courte description de votre entite'},
+              {key:'autorite_a_inviter_nom', label:'Autorite a inviter'},
+              {key:'type_atelier', label:'Type atelier'},
+              {key:'descriptif_atelier', label:'Courte description atelier'},
+              {key:'capacite_equipes', label:'Combien equipes'},
+              {key:'venue_avec_barnum', label:'Venez-vous avec un barnum'},
+              {key:'nb_tables', label:'Besoin en tables'},
+              {key:'nb_chaises', label:'Besoin en chaises'},
+              {key:'electricite_necessaire', label:'Besoin electricite'},
+              {key:'contraintes_emplacement', label:'Avez-vous des besoins particuliers'},
+              {key:'finance_aussi', label:'Avez-vous la possibilité de financer'},
+              {key:'fournit_goodies', label:'Pouvez-vous fournir des lots ou goodies'},
+              {key:'contact_communication', label:'Avez-vous un service communication'},
+              {key:'contact_presse', label:'Relations privilégiées avec la presse'},
+              {key:'defis_proposes', label:'Si oui, quels seraient les défis'},
+              {key:'notes', label:'Précisions ou commentaires'}
             ],
             defaults: { edition_id: editionActiveId },
             onDone: loadPartenariats
@@ -63,8 +121,8 @@
         </div>
       </div>
       <table>
-        <thead><tr><th></th><th>N° atelier</th><th>Entité</th><th>Capacité</th><th>Finance</th><th>Statut</th><th></th></tr></thead>
-        <tbody id="partenariats-body"><tr><td colspan="7" class="hint">Chargement…</td></tr></tbody>
+        <thead><tr><th></th><th>N° atelier</th><th>Entité</th><th>Contact</th><th>Capacité</th><th>Statut</th><th>Opportunités</th><th></th></tr></thead>
+        <tbody id="partenariats-body"><tr><td colspan="8" class="hint">Chargement…</td></tr></tbody>
       </table>
     </div>
   </main>
@@ -82,7 +140,7 @@
       const banner = document.getElementById('edition-banner');
       if (!editionRes.success || !editionRes.data) {
         banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
-        document.getElementById('form-partenariat').querySelector('button').disabled = true;
+        document.getElementById('btn-partenariat-submit').disabled = true;
         document.getElementById('btn-import-partenaires').disabled = true;
         return;
       }
@@ -91,19 +149,45 @@
       loadPartenariats();
     }
 
+    function estVrai(v) { return v === true || v === 'TRUE' || v === 'true'; }
+
+    function boutonsOpportunites(p) {
+      const boutons = [];
+      if (p.autorite_a_inviter_nom && !estVrai(p.autorite_invitee_creee)) {
+        boutons.push(`<button class="secondary" onclick="activer('activerInvitation','${p.id}')">→ Autorité</button>`);
+      }
+      if (p.contact_presse && !estVrai(p.presse_contact_cree)) {
+        boutons.push(`<button class="secondary" onclick="activer('activerContactPresse','${p.id}')">→ Presse</button>`);
+      }
+      if (estVrai(p.finance_aussi) && !estVrai(p.mecene_cree)) {
+        boutons.push(`<button class="secondary" onclick="activer('activerMecenat','${p.id}')">→ Mécène</button>`);
+      }
+      if (estVrai(p.fournit_goodies) && !estVrai(p.goodies_ajoutes)) {
+        boutons.push(`<button class="secondary" onclick="activer('activerGoodies','${p.id}')">→ Goodies</button>`);
+      }
+      return boutons.join(' ') || '<span class="hint">-</span>';
+    }
+
+    async function activer(action, id) {
+      const res = await apiPost('partenaires.' + action, { id: id });
+      if (res.success) loadPartenariats();
+      else alert('Erreur : ' + res.error.message);
+    }
+
     async function loadPartenariats() {
       const res = await apiGet('partenaires.list', { edition_id: editionActiveId });
       const tbody = document.getElementById('partenariats-body');
-      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="7" class="hint">Aucun partenaire pour l\'instant.</td></tr>'; return; }
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="8" class="hint">Aucun partenaire pour l\'instant.</td></tr>'; return; }
       partenariatsData = res.data;
       tbody.innerHTML = res.data.map(p => `
         <tr>
           <td>${p.logo_url ? `<img src="${p.logo_url}" alt="" style="width:32px;height:32px;object-fit:contain">` : ''}</td>
           <td>${p.numero_atelier || ''}</td>
           <td>${p.entite_nom}</td>
+          <td>${p.contact_nom || ''}</td>
           <td>${p.capacite_equipes || ''}</td>
-          <td>${p.finance_aussi === true || p.finance_aussi === 'TRUE' ? 'Oui' : 'Non'}</td>
           <td><span class="badge ${p.statut}">${p.statut}</span></td>
+          <td>${boutonsOpportunites(p)}</td>
           <td><button class="secondary" onclick="showDocumentsModal('partenariat', '${p.id}', '${(p.entite_nom || '').replace(/'/g, "\\'")}')">Documents</button></td>
         </tr>`).join('');
     }
