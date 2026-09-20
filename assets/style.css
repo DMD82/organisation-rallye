@@ -237,3 +237,9 @@ details[open] > summary { margin-bottom: 14px; }
   max-height: 80vh;
   overflow-y: auto;
 }
+
+@media print {
+  .no-print, header.topbar, form { display: none !important; }
+  .card { box-shadow: none; border: 1px solid #999; break-inside: avoid; }
+  body { background: #fff; }
+}

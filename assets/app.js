@@ -80,9 +80,19 @@ function exportCSV(filename, rows) {
 
 const NAV_PAGES = [
   { href: 'generale.html', label: 'Générale' },
+  { href: 'participants.html', label: 'Participants' },
   { href: 'partenaires.html', label: 'Partenaires et Ateliers' },
   { href: 'autorites.html', label: 'Autorités et invités' },
+  { href: 'securite.html', label: 'Dossier de sécurité' },
+  { href: 'logistique.html', label: 'Logistique' },
   { href: 'budget.html', label: 'Budget et Mécènes' },
+  { href: 'communication.html', label: 'Communication et Presse' },
+  { href: 'reunions.html', label: 'Réunions' },
+  { href: 'presentations.html', label: 'Présentations' },
+  { href: 'contenu-pedagogique.html', label: 'Contenu pédagogique' },
+  { href: 'retex.html', label: 'RETEX et Bilan' },
+  { href: 'benevoles.html', label: 'Équipe et bénévoles' },
+  { href: 'remerciements.html', label: 'Remerciements' },
   { href: 'bibliotheque.html', label: 'Bibliothèque' }
 ];
 
@@ -311,5 +321,74 @@ async function runImport_(config, dataRows) {
 
 function closeImportModal() {
   const el = document.getElementById('import-modal-overlay');
+  if (el) el.remove();
+}
+
+/**
+ * Actions de suivi d'une réunion : même principe que showDocumentsModal
+ * (fenêtre légère, liste + ajout), avec en plus le statut et l'échéance.
+ */
+async function showActionsModal(reunionId, reunionTitre) {
+  closeActionsModal();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'actions-modal-overlay';
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeActionsModal(); });
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Actions - ${reunionTitre}</h3>
+        <button class="secondary" onclick="closeActionsModal()">Fermer</button>
+      </div>
+      <div id="actions-modal-list" style="margin:16px 0"><div class="hint">Chargement…</div></div>
+      <form id="actions-modal-form" style="margin-bottom:0">
+        <div class="inline-form" style="margin-bottom:0">
+          <div><label>Intitulé</label><input name="intitule" required></div>
+          <div><label>Responsable</label><input name="responsable"></div>
+          <div><label>Échéance</label><input name="echeance" type="date"></div>
+          <div><button type="submit">Ajouter</button></div>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  async function reload() {
+    const res = await apiGet('reunions.actions.list', { reunion_id: reunionId });
+    const listEl = document.getElementById('actions-modal-list');
+    if (!listEl) return;
+    if (!res.success || !res.data.length) { listEl.innerHTML = '<div class="hint">Aucune action pour l\'instant.</div>'; return; }
+    listEl.innerHTML = res.data.map(a => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <span class="badge ${a.statut === 'termine' ? 'confirme' : (a.statut === 'en_cours' ? 'invite' : 'a_inviter')}">${a.statut}</span>
+          ${a.intitule} ${a.responsable ? ' - ' + a.responsable : ''} ${a.echeance ? ' (' + a.echeance + ')' : ''}
+        </div>
+        <div style="display:flex;gap:6px">
+          ${a.statut !== 'termine' ? `<button class="secondary" onclick="marquerActionTerminee_('${a.id}', '${reunionId}', '${(reunionTitre || '').replace(/'/g, "\\'")}')">Terminer</button>` : ''}
+        </div>
+      </div>`).join('');
+  }
+
+  document.getElementById('actions-modal-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const payload = Object.fromEntries(new FormData(e.target).entries());
+    payload.reunion_id = reunionId;
+    const res = await apiPost('reunions.actions.create', payload);
+    if (res.success) { e.target.reset(); reload(); }
+    else alert('Erreur : ' + res.error.message);
+  });
+
+  reload();
+}
+
+async function marquerActionTerminee_(actionId, reunionId, reunionTitre) {
+  const res = await apiPost('reunions.actions.update', { id: actionId, statut: 'termine' });
+  if (res.success) showActionsModal(reunionId, reunionTitre);
+  else alert('Erreur : ' + res.error.message);
+}
+
+function closeActionsModal() {
+  const el = document.getElementById('actions-modal-overlay');
   if (el) el.remove();
 }
