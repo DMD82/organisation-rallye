@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Contenu pédagogique</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card" id="edition-banner"><div class="hint">Chargement de l'édition active…</div></div>
+
+    <div class="card">
+      <p class="hint">
+        Composition des 5 feuillets du fil rouge (thème + questions à 3 choix).
+        Le fil rouge lui-même - saisie des réponses des équipes le jour J, correction,
+        notation - reste géré dans <strong>rallye.dmd82.fr</strong>. Ce module sert
+        uniquement à préparer le contenu en amont et à l'exporter au bon format.
+      </p>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div>
+          <h3 style="margin:0">Exporter vers le script de notation</h3>
+          <p class="hint" style="margin:6px 0 0">
+            Génère le tableau <code>REPONSES_FIL_ROUGE_2026</code> prêt à coller dans le
+            projet Apps Script de notation (et dans <code>CONFIG.reponsesOfficielles</code>
+            du Code.gs central du PC).
+          </p>
+        </div>
+        <button id="btn-export" onclick="exporterCode()">Générer le code</button>
+      </div>
+      <pre id="export-resultat" class="hint" style="margin-top:10px;display:none;background:var(--bg2);padding:12px;border-radius:6px;overflow-x:auto;white-space:pre-wrap"></pre>
+      <button class="secondary" id="btn-copier" style="display:none;margin-top:8px" onclick="copierCode()">Copier le code</button>
+    </div>
+
+    <div class="card">
+      <h3>Feuillets</h3>
+      <form class="inline-form" id="form-feuillet">
+        <div><label>N° feuillet (1 à 5)</label><input name="numero" type="number" min="1" max="5" required></div>
+        <div><label>Thème</label><input name="theme" placeholder="SOIGNER, SECOURIR..."></div>
+        <div><button type="submit">Ajouter</button></div>
+      </form>
+      <table>
+        <thead><tr><th>N°</th><th>Thème</th><th>Nb questions</th></tr></thead>
+        <tbody id="feuillets-body"><tr><td colspan="3" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Ajouter une question</h3>
+      <form class="inline-form" id="form-question">
+        <div><label>Feuillet</label><select name="feuillet_numero" id="select-feuillet" required></select></div>
+        <div><label>Position dans le feuillet</label><input name="position" type="number" min="1" value="1"></div>
+        <div><label>Bonne réponse</label>
+          <select name="bonne_reponse"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select>
+        </div>
+        <div style="grid-column:1/-1"><label>Question</label><input name="question" required></div>
+        <div><label>Option A</label><input name="option_a"></div>
+        <div><label>Option B</label><input name="option_b"></div>
+        <div><label>Option C</label><input name="option_c"></div>
+        <div><button type="submit">Ajouter</button></div>
+      </form>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+        <h4 style="margin:0">Questions</h4>
+        <div style="display:flex;gap:8px">
+          <button class="secondary" id="btn-import-questions" onclick="showImportModal({
+            title: 'Questions du fil rouge',
+            action: 'contenu.questions.create',
+            fields: [
+              {key:'feuillet_numero', label:'N° feuillet', required:true},
+              {key:'position', label:'Position'},
+              {key:'question', label:'Question', required:true},
+              {key:'option_a', label:'Option A'},
+              {key:'option_b', label:'Option B'},
+              {key:'option_c', label:'Option C'},
+              {key:'bonne_reponse', label:'Bonne réponse'}
+            ],
+            defaults: { edition_id: editionActiveId },
+            onDone: loadQuestions
+          })">Importer</button>
+          <button class="secondary" onclick="exportCSV('questions-fil-rouge', questionsData)">Exporter CSV</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Feuillet</th><th>#</th><th>Question</th><th>Bonne réponse</th><th></th></tr></thead>
+        <tbody id="questions-body"><tr><td colspan="5" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('contenu-pedagogique.html');
+
+    let feuilletsData = [];
+    let questionsData = [];
+    let editionActiveId = null;
+
+    async function init() {
+      const editionRes = await apiGet('generale.editions.active');
+      const banner = document.getElementById('edition-banner');
+      if (!editionRes.success || !editionRes.data) {
+        banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
+        document.getElementById('btn-export').disabled = true;
+        document.querySelector('#form-feuillet button').disabled = true;
+        document.querySelector('#form-question button').disabled = true;
+        document.getElementById('btn-import-questions').disabled = true;
+        return;
+      }
+      editionActiveId = editionRes.data.id;
+      banner.innerHTML = `<div class="hint">Édition active</div><h2 style="margin:4px 0">${editionRes.data.annee} - ${editionRes.data.theme || ''}</h2>`;
+      loadFeuillets();
+      loadQuestions();
+    }
+
+    async function loadFeuillets() {
+      const res = await apiGet('contenu.feuillets.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('feuillets-body');
+      const select = document.getElementById('select-feuillet');
+      if (!res.success || !res.data.length) {
+        tbody.innerHTML = '<tr><td colspan="3" class="hint">Aucun feuillet pour l\'instant.</td></tr>';
+        select.innerHTML = '';
+        return;
+      }
+      feuilletsData = res.data;
+      tbody.innerHTML = res.data.map(f => `
+        <tr>
+          <td>F${f.numero}</td>
+          <td>${f.theme || ''}</td>
+          <td>${questionsData.filter(q => Number(q.feuillet_numero) === Number(f.numero)).length}</td>
+        </tr>`).join('');
+      select.innerHTML = res.data.map(f => `<option value="${f.numero}">F${f.numero} - ${f.theme || 'sans thème'}</option>`).join('');
+    }
+
+    async function loadQuestions() {
+      const res = await apiGet('contenu.questions.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('questions-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="hint">Aucune question pour l\'instant.</td></tr>'; return; }
+      questionsData = res.data;
+      tbody.innerHTML = res.data.map(q => `
+        <tr>
+          <td>F${q.feuillet_numero}</td>
+          <td>${q.position}</td>
+          <td>${q.question}</td>
+          <td><span class="badge confirme">${q.bonne_reponse}</span></td>
+          <td><button class="secondary" onclick="deleteQuestion('${q.id}')">Supprimer</button></td>
+        </tr>`).join('');
+      loadFeuillets(); // rafraîchit le compte de questions par feuillet
+    }
+
+    async function deleteQuestion(id) {
+      if (!confirm('Supprimer cette question ?')) return;
+      const res = await apiPost('contenu.questions.delete', { id: id });
+      if (res.success) loadQuestions();
+      else alert('Erreur : ' + res.error.message);
+    }
+
+    document.getElementById('form-feuillet').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.edition_id = editionActiveId;
+      const res = await apiPost('contenu.feuillets.create', payload);
+      if (res.success) { e.target.reset(); loadFeuillets(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    document.getElementById('form-question').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.edition_id = editionActiveId;
+      const res = await apiPost('contenu.questions.create', payload);
+      if (res.success) { e.target.reset(); loadQuestions(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    async function exporterCode() {
+      const res = await apiGet('contenu.exportCode', { edition_id: editionActiveId });
+      const pre = document.getElementById('export-resultat');
+      if (res.success) {
+        pre.textContent = res.data.code;
+        pre.style.display = '';
+        document.getElementById('btn-copier').style.display = '';
+      } else {
+        alert('Erreur : ' + res.error.message);
+      }
+    }
+
+    function copierCode() {
+      navigator.clipboard.writeText(document.getElementById('export-resultat').textContent)
+        .then(() => alert('Code copié dans le presse-papiers.'));
+    }
+
+    init();
+  </script>
+</body>
+</html>

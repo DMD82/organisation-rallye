@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Logistique</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card" id="edition-banner"><div class="hint">Chargement de l'édition active…</div></div>
+
+    <!-- Besoins remontés par les partenaires (lecture seule) -->
+    <div class="card">
+      <h3>Besoins matériel remontés par les partenaires</h3>
+      <p class="hint">
+        Lecture seule - ces besoins sont saisis directement sur chaque fiche dans
+        <a href="partenaires.html">Partenaires et Ateliers</a>. Rien à modifier ici.
+      </p>
+      <table>
+        <thead><tr><th>Atelier</th><th>Partenaire</th><th>Besoin exprimé</th></tr></thead>
+        <tbody id="besoins-partenaires-body"><tr><td colspan="3" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Check-list logistique -->
+    <div class="card no-print">
+      <h3>Ajouter un item de check-list</h3>
+      <form class="inline-form" id="form-item">
+        <div><label>Catégorie</label>
+          <select name="categorie">
+            <option value="sonorisation">Sonorisation</option>
+            <option value="eau">Eau</option>
+            <option value="electricite">Électricité</option>
+            <option value="podium">Podium</option>
+            <option value="impressions">Impressions</option>
+            <option value="goodies">Goodies</option>
+            <option value="mots_discours">Mots / discours</option>
+            <option value="gouter">Goûter</option>
+            <option value="cafe">Café</option>
+            <option value="recompenses">Récompenses</option>
+            <option value="trophee">Mise à jour du trophée</option>
+            <option value="materiel_partenaires">Matériel partenaires</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+        <div><label>Libellé</label><input name="libelle" placeholder="4 enceintes + micro HF" required></div>
+        <div><label>Quantité</label><input name="quantite" placeholder="4, 200 bouteilles..."></div>
+        <div><label>Responsable</label><input name="responsable"></div>
+        <div><label>Statut</label>
+          <select name="statut">
+            <option value="a_prevoir">À prévoir</option>
+            <option value="en_cours">En cours</option>
+            <option value="pret">Prêt</option>
+          </select>
+        </div>
+        <div><button type="submit" id="btn-item-submit">Ajouter</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center" class="no-print">
+        <h3 style="margin:0">Check-list logistique</h3>
+        <div style="display:flex;gap:8px">
+          <button class="secondary" id="btn-import-items" onclick="showImportModal({
+            title: 'Check-list logistique',
+            action: 'logistique.items.create',
+            fields: [
+              {key:'categorie', label:'Catégorie', required:true},
+              {key:'libelle', label:'Libellé', required:true},
+              {key:'quantite', label:'Quantité'},
+              {key:'responsable', label:'Responsable'},
+              {key:'statut', label:'Statut'}
+            ],
+            defaults: { edition_id: editionActiveId },
+            onDone: loadItems
+          })">Importer</button>
+          <button class="secondary" onclick="exportCSV('logistique', itemsData)">Exporter CSV</button>
+          <button class="secondary" onclick="window.print()">Imprimer la check-list</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Catégorie</th><th>Libellé</th><th>Quantité</th><th>Responsable</th><th>Statut</th><th class="no-print"></th></tr></thead>
+        <tbody id="items-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('logistique.html');
+
+    let itemsData = [];
+    let editionActiveId = null;
+
+    const LABELS_CATEGORIE = {
+      sonorisation: 'Sonorisation', eau: 'Eau', electricite: 'Électricité', podium: 'Podium',
+      impressions: 'Impressions', goodies: 'Goodies', mots_discours: 'Mots / discours',
+      gouter: 'Goûter', cafe: 'Café', recompenses: 'Récompenses', trophee: 'Mise à jour du trophée',
+      materiel_partenaires: 'Matériel partenaires', autre: 'Autre'
+    };
+
+    async function init() {
+      const editionRes = await apiGet('generale.editions.active');
+      const banner = document.getElementById('edition-banner');
+      if (!editionRes.success || !editionRes.data) {
+        banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
+        document.getElementById('btn-item-submit').disabled = true;
+        document.getElementById('btn-import-items').disabled = true;
+        return;
+      }
+      editionActiveId = editionRes.data.id;
+      banner.innerHTML = `<div class="hint">Édition active</div><h2 style="margin:4px 0">${editionRes.data.annee} - ${editionRes.data.theme || ''}</h2>`;
+      loadBesoinsPartenaires();
+      loadItems();
+    }
+
+    async function loadBesoinsPartenaires() {
+      const res = await apiGet('logistique.besoinsPartenaires', { edition_id: editionActiveId });
+      const tbody = document.getElementById('besoins-partenaires-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="3" class="hint">Aucun besoin particulier signalé pour l\'instant.</td></tr>'; return; }
+      tbody.innerHTML = res.data.map(b => `
+        <tr><td>${b.numero_atelier || ''}</td><td>${b.entite_nom}</td><td>${b.besoins_logistiques}</td></tr>`).join('');
+    }
+
+    async function loadItems() {
+      const res = await apiGet('logistique.items.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('items-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="6" class="hint">Aucun item pour l\'instant.</td></tr>'; return; }
+      itemsData = res.data;
+      tbody.innerHTML = res.data.map(i => `
+        <tr>
+          <td>${LABELS_CATEGORIE[i.categorie] || i.categorie}</td>
+          <td>${i.libelle}</td>
+          <td>${i.quantite || ''}</td>
+          <td>${i.responsable || ''}</td>
+          <td><span class="badge ${i.statut === 'pret' ? 'confirme' : (i.statut === 'en_cours' ? 'invite' : 'a_inviter')}">${i.statut}</span></td>
+          <td class="no-print"><button class="secondary" onclick="showDocumentsModal('logistique_item', '${i.id}', '${(i.libelle || '').replace(/'/g, "\\'")}')">Documents</button></td>
+        </tr>`).join('');
+    }
+
+    document.getElementById('form-item').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.edition_id = editionActiveId;
+      const res = await apiPost('logistique.items.create', payload);
+      if (res.success) { e.target.reset(); loadItems(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    init();
+  </script>
+</body>
+</html>

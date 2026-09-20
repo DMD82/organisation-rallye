@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Équipe et bénévoles</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card" id="edition-banner"><div class="hint">Chargement de l'édition active…</div></div>
+
+    <div class="card">
+      <h3>Ajouter un bénévole</h3>
+      <form class="inline-form" id="form-benevole">
+        <div><label>Nom</label><input name="nom" required></div>
+        <div><label>Rôle</label><input name="role" placeholder="PC, accueil, ateliers..."></div>
+        <div><label>Téléphone</label><input name="telephone"></div>
+        <div><label>Email</label><input name="email" type="email"></div>
+        <div><label>Disponibilité</label><input name="disponibilite" placeholder="Journée complète, matin seulement..."></div>
+        <div><label>Statut</label>
+          <select name="statut">
+            <option value="a_solliciter">À solliciter</option>
+            <option value="sollicite">Sollicité</option>
+            <option value="confirme">Confirmé</option>
+            <option value="decline">Décliné</option>
+          </select>
+        </div>
+        <div><button type="submit" id="btn-benevole-submit">Ajouter</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Équipe</h3>
+        <div style="display:flex;gap:8px">
+          <button class="secondary" id="btn-import-benevoles" onclick="showImportModal({
+            title: 'Bénévoles',
+            action: 'benevoles.create',
+            fields: [
+              {key:'nom', label:'Nom', required:true},
+              {key:'role', label:'Rôle'},
+              {key:'telephone', label:'Téléphone'},
+              {key:'email', label:'Email'},
+              {key:'disponibilite', label:'Disponibilité'},
+              {key:'statut', label:'Statut'}
+            ],
+            defaults: { edition_id: editionActiveId },
+            onDone: loadBenevoles
+          })">Importer</button>
+          <button class="secondary" onclick="exportCSV('benevoles', benevolesData)">Exporter CSV</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Nom</th><th>Rôle</th><th>Contact</th><th>Disponibilité</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="benevoles-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('benevoles.html');
+
+    let benevolesData = [];
+    let editionActiveId = null;
+
+    async function init() {
+      const editionRes = await apiGet('generale.editions.active');
+      const banner = document.getElementById('edition-banner');
+      if (!editionRes.success || !editionRes.data) {
+        banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
+        document.getElementById('btn-benevole-submit').disabled = true;
+        document.getElementById('btn-import-benevoles').disabled = true;
+        return;
+      }
+      editionActiveId = editionRes.data.id;
+      banner.innerHTML = `<div class="hint">Édition active</div><h2 style="margin:4px 0">${editionRes.data.annee} - ${editionRes.data.theme || ''}</h2>`;
+      loadBenevoles();
+    }
+
+    async function loadBenevoles() {
+      const res = await apiGet('benevoles.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('benevoles-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="6" class="hint">Aucun bénévole pour l\'instant.</td></tr>'; return; }
+      benevolesData = res.data;
+      tbody.innerHTML = res.data.map(b => `
+        <tr>
+          <td>${b.nom}</td><td>${b.role || ''}</td>
+          <td>${b.email || ''} ${b.telephone || ''}</td>
+          <td>${b.disponibilite || ''}</td>
+          <td><span class="badge ${b.statut}">${b.statut}</span></td>
+          <td><button class="secondary" onclick="showDocumentsModal('benevole', '${b.id}', '${(b.nom || '').replace(/'/g, "\\'")}')">Documents</button></td>
+        </tr>`).join('');
+    }
+
+    document.getElementById('form-benevole').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.edition_id = editionActiveId;
+      const res = await apiPost('benevoles.create', payload);
+      if (res.success) { e.target.reset(); loadBenevoles(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    init();
+  </script>
+</body>
+</html>

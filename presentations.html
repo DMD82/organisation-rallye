@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Présentations</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card" id="edition-banner"><div class="hint">Chargement de l'édition active…</div></div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div>
+          <h3 style="margin:0">Générer une présentation de synthèse</h3>
+          <p class="hint" style="margin:6px 0 0">
+            Compose un Google Slides (chiffres clés, partenaires confirmés, budget, autorités)
+            à partir de ce qui est déjà saisi dans l'outil, et le catalogue automatiquement
+            dans la Bibliothèque. À retoucher ensuite dans Slides comme n'importe quelle présentation.
+          </p>
+        </div>
+        <button id="btn-generer" onclick="genererPresentation()">Générer</button>
+      </div>
+      <div id="generer-resultat" class="hint" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <p class="hint">
+        Les modèles de présentations réutilisables d'une année sur l'autre (trames types,
+        canevas visuels) se cataloguent directement dans <a href="bibliotheque.html">Bibliothèque</a>,
+        catégorie "Présentation".
+      </p>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Présentations de cette édition</h3>
+      </div>
+      <table>
+        <thead><tr><th>Titre</th><th>Type</th><th>Ajoutée le</th><th></th></tr></thead>
+        <tbody id="presentations-body"><tr><td colspan="4" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('presentations.html');
+
+    let editionActiveId = null;
+
+    async function init() {
+      const editionRes = await apiGet('generale.editions.active');
+      const banner = document.getElementById('edition-banner');
+      if (!editionRes.success || !editionRes.data) {
+        banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
+        document.getElementById('btn-generer').disabled = true;
+        return;
+      }
+      editionActiveId = editionRes.data.id;
+      banner.innerHTML = `<div class="hint">Édition active</div><h2 style="margin:4px 0">${editionRes.data.annee} - ${editionRes.data.theme || ''}</h2>`;
+      loadPresentations();
+    }
+
+    async function genererPresentation() {
+      const btn = document.getElementById('btn-generer');
+      const resEl = document.getElementById('generer-resultat');
+      btn.disabled = true;
+      resEl.textContent = 'Génération en cours…';
+      const res = await apiPost('presentations.generate', { edition_id: editionActiveId });
+      btn.disabled = false;
+      if (res.success) {
+        resEl.innerHTML = 'Présentation générée : <a href="' + res.data.url + '" target="_blank">l\'ouvrir</a>. Elle a aussi été ajoutée à la Bibliothèque.';
+        loadPresentations();
+      } else {
+        resEl.textContent = 'Erreur : ' + res.error.message;
+      }
+    }
+
+    async function loadPresentations() {
+      const res = await apiGet('documents.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('presentations-body');
+      if (!res.success) { tbody.innerHTML = '<tr><td colspan="4" class="hint">Erreur de chargement.</td></tr>'; return; }
+      const presentations = res.data.filter(d => d.categorie === 'presentation');
+      if (!presentations.length) { tbody.innerHTML = '<tr><td colspan="4" class="hint">Aucune présentation pour l\'instant.</td></tr>'; return; }
+      tbody.innerHTML = presentations.map(d => `
+        <tr>
+          <td>${d.titre}</td>
+          <td><span class="badge ${d.type === 'modele' ? 'promis' : 'sollicite'}">${d.type === 'modele' ? 'Modèle' : 'Archive'}</span></td>
+          <td>${d.date_ajout || ''}</td>
+          <td><a class="btn secondary" href="${d.lien_drive}" target="_blank">Ouvrir</a></td>
+        </tr>`).join('');
+    }
+
+    init();
+  </script>
+</body>
+</html>

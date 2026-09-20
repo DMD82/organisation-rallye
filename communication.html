@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Communication et Presse</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="tabs">
+      <a href="#" class="tab-link active" data-tab="modeles">Modèles de mails</a>
+      <a href="#" class="tab-link" data-tab="contacts">Contacts presse</a>
+      <a href="#" class="tab-link" data-tab="communiques">Communiqués</a>
+      <a href="#" class="tab-link" data-tab="veille">Veille média</a>
+    </div>
+
+    <!-- Modèles de mails -->
+    <section id="tab-modeles">
+      <div class="card">
+        <p class="hint">
+          Variables disponibles dans l'objet et le corps : <code>{{annee}}</code> <code>{{theme}}</code>
+          <code>{{date_evenement}}</code> <code>{{lieu}}</code> <code>{{association_nom}}</code>
+          <code>{{signataire_role}}</code> <code>{{signataire_nom}}</code> - remplacées
+          automatiquement par les valeurs de l'édition active au moment de générer le mail.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3 id="form-modele-title">Ajouter un modèle</h3>
+        <form id="form-modele">
+          <input type="hidden" name="id" value="">
+          <div class="inline-form" style="margin-bottom:12px">
+            <div><label>Titre</label><input name="titre" placeholder="Sollicitation mécénat" required></div>
+            <div><label>Catégorie</label>
+              <select name="categorie">
+                <option value="sollicitation_mecenat">Sollicitation mécénat</option>
+                <option value="relance_mecenat">Relance mécénat</option>
+                <option value="sollicitation_partenaire">Sollicitation partenaire</option>
+                <option value="consignes_partenaires">Consignes partenaires</option>
+                <option value="invitation_autorite">Invitation autorité</option>
+                <option value="convocation_reunion">Convocation réunion</option>
+                <option value="remerciement">Remerciement</option>
+                <option value="autre">Autre</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Objet</label>
+            <input name="objet" style="width:100%" placeholder="Rallye Citoyen {{annee}} - Sollicitation">
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Corps du message</label>
+            <textarea name="corps" rows="8" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem" placeholder="Bonjour,&#10;&#10;Dans le cadre du Rallye Citoyen {{annee}}..."></textarea>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button type="submit" id="form-modele-submit">Ajouter</button>
+            <button type="button" class="secondary" id="form-modele-cancel" style="display:none" onclick="resetModeleForm()">Annuler</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Modèles</h3>
+        <div id="modeles-list"><div class="hint">Chargement…</div></div>
+      </div>
+    </section>
+
+    <!-- Contacts presse -->
+    <section id="tab-contacts" style="display:none">
+      <div class="card">
+        <h3>Ajouter un contact</h3>
+        <form class="inline-form" id="form-contact-presse">
+          <div><label>Nom</label><input name="nom" required></div>
+          <div><label>Média</label><input name="media" placeholder="La Dépêche du Midi, Radio Totem..."></div>
+          <div><label>Type</label><input name="type" placeholder="Presse écrite, radio, TV..."></div>
+          <div><label>Email</label><input name="email" type="email"></div>
+          <div><label>Téléphone</label><input name="telephone"></div>
+          <div><label>Statut</label>
+            <select name="statut">
+              <option value="a_contacter">À contacter</option>
+              <option value="contacte">Contacté</option>
+              <option value="relance">Relancé</option>
+              <option value="confirme">Confirmé</option>
+              <option value="decline">Décliné</option>
+            </select>
+          </div>
+          <div><button type="submit">Ajouter</button></div>
+        </form>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+          <h4 style="margin:0">Contacts</h4>
+          <div style="display:flex;gap:8px">
+            <button class="secondary" onclick="showImportModal({
+              title: 'Contacts presse',
+              action: 'presse.contacts.create',
+              fields: [
+                {key:'nom', label:'Nom', required:true},
+                {key:'media', label:'Média'},
+                {key:'type', label:'Type'},
+                {key:'email', label:'Email'},
+                {key:'telephone', label:'Téléphone'},
+                {key:'statut', label:'Statut'}
+              ],
+              onDone: loadContactsPresse
+            })">Importer</button>
+            <button class="secondary" onclick="exportCSV('contacts-presse', contactsPresseData)">Exporter CSV</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Nom</th><th>Média</th><th>Email</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="contacts-presse-body"><tr><td colspan="5" class="hint">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Communiqués -->
+    <section id="tab-communiques" style="display:none">
+      <div class="card">
+        <h3 id="form-communique-title">Ajouter un communiqué</h3>
+        <form id="form-communique">
+          <input type="hidden" name="id" value="">
+          <div class="inline-form" style="margin-bottom:12px">
+            <div><label>Titre</label><input name="titre" required></div>
+            <div><label>Date d'envoi</label><input name="date_envoi" type="date"></div>
+            <div><label>Destinataires</label><input name="destinataires" placeholder="Presse locale, institutionnelle..."></div>
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Contenu</label>
+            <textarea name="contenu" rows="8" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button type="submit" id="form-communique-submit">Ajouter</button>
+            <button type="button" class="secondary" id="form-communique-cancel" style="display:none" onclick="resetCommuniqueForm()">Annuler</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Communiqués</h3>
+        <div id="communiques-list"><div class="hint">Chargement…</div></div>
+      </div>
+    </section>
+
+    <!-- Veille média -->
+    <section id="tab-veille" style="display:none">
+      <div class="card">
+        <p class="hint">
+          Lit et écrit directement le même Google Doc que <code>rallye.dmd82.fr/media/</code> -
+          tout ajout ici apparaît immédiatement sur cette page publique, sans manipulation
+          supplémentaire.
+        </p>
+        <form class="inline-form" id="form-veille" style="margin-bottom:0">
+          <div><label>Nom (facultatif)</label><input name="name" placeholder="SDIS82, DMD82..."></div>
+          <div><label>URL</label><input name="url" placeholder="https://www.facebook.com/..." required></div>
+          <div><button type="submit">Ajouter</button></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Liens de veille</h3>
+        <div id="veille-list"><div class="hint">Chargement…</div></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('communication.html');
+
+    let modelesData = [];
+    let variablesData = {};
+    let contactsPresseData = [];
+    let communiquesData = [];
+
+    document.querySelectorAll('.tab-link').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        ['modeles', 'contacts', 'communiques', 'veille'].forEach(t => {
+          document.getElementById('tab-' + t).style.display = t === link.dataset.tab ? '' : 'none';
+        });
+      });
+    });
+
+    const LABELS_CATEGORIE = {
+      sollicitation_mecenat: 'Sollicitation mécénat', relance_mecenat: 'Relance mécénat',
+      sollicitation_partenaire: 'Sollicitation partenaire', consignes_partenaires: 'Consignes partenaires',
+      invitation_autorite: 'Invitation autorité', convocation_reunion: 'Convocation réunion',
+      remerciement: 'Remerciement', autre: 'Autre'
+    };
+
+    function resoudreVariables(texte) {
+      if (!texte) return '';
+      return texte.replace(/\{\{(\w+)\}\}/g, (m, key) => (variablesData[key] !== undefined && variablesData[key] !== '') ? variablesData[key] : m);
+    }
+
+    // ── Modèles de mails ──────────────────────────────────────────
+    async function loadModeles() {
+      const [resModeles, resVars] = await Promise.all([
+        apiGet('communication.modeles.list'),
+        apiGet('communication.variables')
+      ]);
+      if (resVars.success) variablesData = resVars.data;
+
+      const listEl = document.getElementById('modeles-list');
+      if (!resModeles.success || !resModeles.data.length) { listEl.innerHTML = '<div class="hint">Aucun modèle pour l\'instant.</div>'; return; }
+      modelesData = resModeles.data;
+
+      listEl.innerHTML = modelesData.map(m => `
+        <div class="card" style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <span class="badge sollicite">${LABELS_CATEGORIE[m.categorie] || m.categorie}</span>
+              <h4 style="margin:8px 0 4px">${m.titre}</h4>
+              <p class="hint" style="margin:0">${(m.objet || '').substring(0, 80)}</p>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              <button class="secondary" onclick="genererMail('${m.id}')">Générer</button>
+              <button class="secondary" onclick="editModele('${m.id}')">Modifier</button>
+              <button class="secondary" onclick="deleteModele('${m.id}')">Supprimer</button>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+
+    function genererMail(id) {
+      const m = modelesData.find(x => x.id === id);
+      if (!m) return;
+      afficherTexteGenere(m.titre, resoudreVariables(m.objet), resoudreVariables(m.corps));
+    }
+
+    function afficherTexteGenere(titre, objet, corps) {
+      closeImportModal(); closeDocumentsModal();
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.id = 'mail-modal-overlay';
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+      overlay.innerHTML = `
+        <div class="modal-box" style="max-width:640px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <h3 style="margin:0">${titre}</h3>
+            <button class="secondary" onclick="document.getElementById('mail-modal-overlay').remove()">Fermer</button>
+          </div>
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin:12px 0 3px">Objet</label>
+          <input id="mail-gen-objet" style="width:100%" value="${objet.replace(/"/g, '&quot;')}">
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin:12px 0 3px">Corps</label>
+          <textarea id="mail-gen-corps" rows="12" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem">${corps}</textarea>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button onclick="copierMail()">Copier le texte</button>
+            <button class="secondary" onclick="ouvrirMailto()">Ouvrir dans ma messagerie</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+    }
+
+    function copierMail() {
+      const objet = document.getElementById('mail-gen-objet').value;
+      const corps = document.getElementById('mail-gen-corps').value;
+      navigator.clipboard.writeText('Objet : ' + objet + '\n\n' + corps)
+        .then(() => alert('Copié dans le presse-papiers.'));
+    }
+
+    function ouvrirMailto() {
+      const objet = encodeURIComponent(document.getElementById('mail-gen-objet').value);
+      const corps = encodeURIComponent(document.getElementById('mail-gen-corps').value);
+      window.location.href = `mailto:?subject=${objet}&body=${corps}`;
+    }
+
+    function editModele(id) {
+      const m = modelesData.find(x => x.id === id);
+      if (!m) return;
+      const form = document.getElementById('form-modele');
+      form.id.value = m.id;
+      form.titre.value = m.titre || '';
+      form.categorie.value = m.categorie || 'autre';
+      form.objet.value = m.objet || '';
+      form.corps.value = m.corps || '';
+      document.getElementById('form-modele-title').textContent = 'Modifier le modèle';
+      document.getElementById('form-modele-submit').textContent = 'Enregistrer';
+      document.getElementById('form-modele-cancel').style.display = '';
+      form.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function resetModeleForm() {
+      const form = document.getElementById('form-modele');
+      form.reset();
+      form.id.value = '';
+      document.getElementById('form-modele-title').textContent = 'Ajouter un modèle';
+      document.getElementById('form-modele-submit').textContent = 'Ajouter';
+      document.getElementById('form-modele-cancel').style.display = 'none';
+    }
+
+    async function deleteModele(id) {
+      if (!confirm('Supprimer ce modèle ?')) return;
+      const res = await apiPost('communication.modeles.delete', { id: id });
+      if (res.success) loadModeles();
+      else alert('Erreur : ' + res.error.message);
+    }
+
+    document.getElementById('form-modele').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const isEdit = !!payload.id;
+      const res = await apiPost(isEdit ? 'communication.modeles.update' : 'communication.modeles.create', payload);
+      if (res.success) { resetModeleForm(); loadModeles(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    // ── Contacts presse ────────────────────────────────────────────
+    async function loadContactsPresse() {
+      const res = await apiGet('presse.contacts.list');
+      const tbody = document.getElementById('contacts-presse-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="hint">Aucun contact pour l\'instant.</td></tr>'; return; }
+      contactsPresseData = res.data;
+      tbody.innerHTML = res.data.map(c => `
+        <tr>
+          <td>${c.nom}</td><td>${c.media || ''}</td><td>${c.email || ''}</td>
+          <td><span class="badge ${c.statut}">${c.statut}</span></td>
+          <td><button class="secondary" onclick="deleteContactPresse('${c.id}')">Supprimer</button></td>
+        </tr>`).join('');
+    }
+
+    async function deleteContactPresse(id) {
+      if (!confirm('Supprimer ce contact ?')) return;
+      const res = await apiPost('presse.contacts.delete', { id: id });
+      if (res.success) loadContactsPresse();
+      else alert('Erreur : ' + res.error.message);
+    }
+
+    document.getElementById('form-contact-presse').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const res = await apiPost('presse.contacts.create', payload);
+      if (res.success) { e.target.reset(); loadContactsPresse(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    // ── Communiqués ─────────────────────────────────────────────────
+    async function loadCommuniques() {
+      const res = await apiGet('presse.communiques.list');
+      const listEl = document.getElementById('communiques-list');
+      if (!res.success || !res.data.length) { listEl.innerHTML = '<div class="hint">Aucun communiqué pour l\'instant.</div>'; return; }
+      communiquesData = res.data;
+      listEl.innerHTML = communiquesData.map(c => `
+        <div class="card" style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <h4 style="margin:0 0 4px">${c.titre}</h4>
+              <p class="hint" style="margin:0">${c.date_envoi || 'Date non définie'} - ${c.destinataires || ''}</p>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              ${c.doc_url ? `<a class="btn secondary" href="${c.doc_url}" target="_blank">Ouvrir le document</a>` : `<button class="secondary" onclick="genererCommuniqueDoc('${c.id}')">Générer le document</button>`}
+              <button class="secondary" onclick="editCommunique('${c.id}')">Modifier</button>
+              <button class="secondary" onclick="deleteCommunique('${c.id}')">Supprimer</button>
+            </div>
+          </div>
+        </div>`).join('');
+    }
+
+    async function genererCommuniqueDoc(id) {
+      const res = await apiPost('presse.communiques.generateDoc', { id: id });
+      if (res.success) loadCommuniques();
+      else alert('Erreur : ' + res.error.message);
+    }
+
+    function editCommunique(id) {
+      const c = communiquesData.find(x => x.id === id);
+      if (!c) return;
+      const form = document.getElementById('form-communique');
+      form.id.value = c.id;
+      form.titre.value = c.titre || '';
+      form.date_envoi.value = c.date_envoi || '';
+      form.destinataires.value = c.destinataires || '';
+      form.contenu.value = c.contenu || '';
+      document.getElementById('form-communique-title').textContent = 'Modifier le communiqué';
+      document.getElementById('form-communique-submit').textContent = 'Enregistrer';
+      document.getElementById('form-communique-cancel').style.display = '';
+      form.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function resetCommuniqueForm() {
+      const form = document.getElementById('form-communique');
+      form.reset();
+      form.id.value = '';
+      document.getElementById('form-communique-title').textContent = 'Ajouter un communiqué';
+      document.getElementById('form-communique-submit').textContent = 'Ajouter';
+      document.getElementById('form-communique-cancel').style.display = 'none';
+    }
+
+    async function deleteCommunique(id) {
+      if (!confirm('Supprimer ce communiqué ?')) return;
+      const res = await apiPost('presse.communiques.delete', { id: id });
+      if (res.success) loadCommuniques();
+      else alert('Erreur : ' + res.error.message);
+    }
+
+    document.getElementById('form-communique').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const isEdit = !!payload.id;
+      const res = await apiPost(isEdit ? 'presse.communiques.update' : 'presse.communiques.create', payload);
+      if (res.success) { resetCommuniqueForm(); loadCommuniques(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    // ── Veille média ────────────────────────────────────────────────
+    async function loadVeille() {
+      const res = await apiGet('presse.veille.list');
+      const listEl = document.getElementById('veille-list');
+      if (!res.success) { listEl.innerHTML = '<div class="hint">' + res.error.message + '</div>'; return; }
+      if (!res.data.length) { listEl.innerHTML = '<div class="hint">Aucun lien pour l\'instant.</div>'; return; }
+      listEl.innerHTML = '<table><thead><tr><th>Source</th><th>Lien</th></tr></thead><tbody>' +
+        res.data.map(l => `<tr><td>${l.source}</td><td><a href="${l.url}" target="_blank">${l.url}</a></td></tr>`).join('') +
+        '</tbody></table>';
+    }
+
+    document.getElementById('form-veille').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const res = await apiPost('presse.veille.add', payload);
+      if (res.success) { e.target.reset(); loadVeille(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    loadModeles();
+    loadContactsPresse();
+    loadCommuniques();
+    loadVeille();
+  </script>
+</body>
+</html>

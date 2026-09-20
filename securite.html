@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Dossier de sécurité</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card" id="edition-banner"><div class="hint">Chargement de l'édition active…</div></div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div>
+          <h3 style="margin:0">Générer le dossier</h3>
+          <p class="hint" style="margin:6px 0 0">Compose un document structuré (une section par catégorie, table des contacts d'urgence) à partir de tout ce qui est saisi ci-dessous, et le catalogue automatiquement dans la Bibliothèque.</p>
+        </div>
+        <button id="btn-generer" onclick="genererDossier()">Générer le dossier</button>
+      </div>
+      <div id="generer-resultat" class="hint" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h3>Ajouter une mesure</h3>
+      <form class="inline-form" id="form-mesure">
+        <div><label>Catégorie</label>
+          <select name="categorie">
+            <option value="contexte">Contexte (Vigipirate)</option>
+            <option value="controle_acces">Contrôle d'accès</option>
+            <option value="patrouilles">Patrouilles</option>
+            <option value="videoprotection">Vidéoprotection</option>
+            <option value="personnel_arme">Personnel armé habilité</option>
+            <option value="incendie">Sécurité incendie</option>
+            <option value="secours_dps">Dispositif de secours (DPS)</option>
+            <option value="assurance">Assurance</option>
+            <option value="stationnement">Stationnement</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+        <div><label>Libellé</label><input name="libelle" placeholder="4 défibrillateurs positionnés" required></div>
+        <div><label>Responsable</label><input name="responsable" placeholder="SDIS82, Croix-Rouge..."></div>
+        <div><label>Statut</label>
+          <select name="statut">
+            <option value="a_prevoir">À prévoir</option>
+            <option value="en_place">En place</option>
+            <option value="valide">Validé</option>
+          </select>
+        </div>
+        <div style="grid-column:1/-1"><label>Détail</label><input name="detail" placeholder="Précisions, emplacement, modalités..."></div>
+        <div><button type="submit" id="btn-mesure-submit">Ajouter</button></div>
+      </form>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+        <h4 style="margin:0">Mesures</h4>
+        <div style="display:flex;gap:8px">
+          <button class="secondary" id="btn-import-mesures" onclick="showImportModal({
+            title: 'Mesures de sécurité',
+            action: 'securite.mesures.create',
+            fields: [
+              {key:'categorie', label:'Catégorie', required:true},
+              {key:'libelle', label:'Libellé', required:true},
+              {key:'detail', label:'Détail'},
+              {key:'responsable', label:'Responsable'},
+              {key:'statut', label:'Statut'}
+            ],
+            defaults: { edition_id: editionActiveId },
+            onDone: loadMesures
+          })">Importer</button>
+          <button class="secondary" onclick="exportCSV('mesures-securite', mesuresData)">Exporter CSV</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Catégorie</th><th>Libellé</th><th>Responsable</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="mesures-body"><tr><td colspan="5" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Ajouter un contact d'urgence</h3>
+      <form class="inline-form" id="form-contact">
+        <div><label>Rôle</label><input name="role" placeholder="Poste de secours principal" required></div>
+        <div><label>Entité</label><input name="nom_entite" placeholder="Croix-Rouge, SDIS82..."></div>
+        <div><label>Téléphone d'urgence</label><input name="telephone_urgence"></div>
+        <div><button type="submit" id="btn-contact-submit">Ajouter</button></div>
+      </form>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+        <h4 style="margin:0">Contacts d'urgence</h4>
+        <button class="secondary" onclick="exportCSV('contacts-securite', contactsData)">Exporter CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>Rôle</th><th>Entité</th><th>Téléphone</th></tr></thead>
+        <tbody id="contacts-body"><tr><td colspan="3" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('securite.html');
+
+    let mesuresData = [];
+    let contactsData = [];
+    let editionActiveId = null;
+
+    const LABELS_CATEGORIE = {
+      contexte: 'Contexte (Vigipirate)', controle_acces: "Contrôle d'accès", patrouilles: 'Patrouilles',
+      videoprotection: 'Vidéoprotection', personnel_arme: 'Personnel armé habilité',
+      incendie: 'Sécurité incendie', secours_dps: 'Dispositif de secours (DPS)',
+      assurance: 'Assurance', stationnement: 'Stationnement', autre: 'Autre'
+    };
+
+    async function init() {
+      const editionRes = await apiGet('generale.editions.active');
+      const banner = document.getElementById('edition-banner');
+      if (!editionRes.success || !editionRes.data) {
+        banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
+        document.getElementById('btn-mesure-submit').disabled = true;
+        document.getElementById('btn-contact-submit').disabled = true;
+        document.getElementById('btn-generer').disabled = true;
+        document.getElementById('btn-import-mesures').disabled = true;
+        return;
+      }
+      editionActiveId = editionRes.data.id;
+      banner.innerHTML = `<div class="hint">Édition active</div><h2 style="margin:4px 0">${editionRes.data.annee} - ${editionRes.data.theme || ''}</h2>`;
+      loadMesures();
+      loadContacts();
+    }
+
+    async function loadMesures() {
+      const res = await apiGet('securite.mesures.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('mesures-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="hint">Aucune mesure pour l\'instant.</td></tr>'; return; }
+      mesuresData = res.data;
+      tbody.innerHTML = res.data.map(m => `
+        <tr>
+          <td>${LABELS_CATEGORIE[m.categorie] || m.categorie}</td>
+          <td>${m.libelle}</td>
+          <td>${m.responsable || ''}</td>
+          <td><span class="badge ${m.statut === 'valide' ? 'confirme' : (m.statut === 'en_place' ? 'invite' : 'a_inviter')}">${m.statut}</span></td>
+          <td><button class="secondary" onclick="showDocumentsModal('mesure_securite', '${m.id}', '${(m.libelle || '').replace(/'/g, "\\'")}')">Documents</button></td>
+        </tr>`).join('');
+    }
+
+    async function loadContacts() {
+      const res = await apiGet('securite.contacts.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('contacts-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="3" class="hint">Aucun contact pour l\'instant.</td></tr>'; return; }
+      contactsData = res.data;
+      tbody.innerHTML = res.data.map(c => `
+        <tr><td>${c.role}</td><td>${c.entite_nom || ''}</td><td>${c.telephone_urgence || ''}</td></tr>`).join('');
+    }
+
+    document.getElementById('form-mesure').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.edition_id = editionActiveId;
+      const res = await apiPost('securite.mesures.create', payload);
+      if (res.success) { e.target.reset(); loadMesures(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    document.getElementById('form-contact').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.edition_id = editionActiveId;
+      const res = await apiPost('securite.contacts.create', payload);
+      if (res.success) { e.target.reset(); loadContacts(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    async function genererDossier() {
+      const btn = document.getElementById('btn-generer');
+      const resEl = document.getElementById('generer-resultat');
+      btn.disabled = true;
+      resEl.textContent = 'Génération en cours…';
+      const res = await apiPost('securite.genererDossier', { edition_id: editionActiveId });
+      btn.disabled = false;
+      if (res.success) {
+        resEl.innerHTML = 'Dossier généré : <a href="' + res.data.url + '" target="_blank">l\'ouvrir</a>. Il a aussi été ajouté à la Bibliothèque.';
+      } else {
+        resEl.textContent = 'Erreur : ' + res.error.message;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

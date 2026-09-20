@@ -12,7 +12,8 @@
   <main>
     <!-- Bandeau édition active -->
     <div class="hero-banner" id="hero-banner">
-      <div>
+      <img id="hero-logo" src="" alt="" style="display:none;width:56px;height:56px;object-fit:contain;border-radius:8px;background:#fff;padding:4px">
+      <div style="flex:1">
         <div class="hero-eyebrow">Édition active</div>
         <div class="hero-title" id="hero-title">Chargement…</div>
         <div class="hero-meta" id="hero-meta"></div>
@@ -26,7 +27,7 @@
     <!-- Essentiel : toujours visible -->
     <div class="card">
       <div class="grid">
-        <div class="card stat"><div class="value" id="v-equipes-confirmees">-</div><div class="label">Équipes confirmées</div></div>
+        <div class="card stat"><div class="value" id="v-equipes-confirmees">-</div><div class="label" id="v-equipes-confirmees-label">Équipes confirmées</div></div>
         <div class="card stat"><div class="value" id="v-capacite">-</div><div class="label">Capacité confirmée</div></div>
         <div class="card stat"><div class="value" id="v-ateliers-manquants">-</div><div class="label">Places manquantes</div></div>
         <div class="card stat"><div class="value" id="v-solde">-</div><div class="label">Solde budget réel</div></div>
@@ -46,6 +47,7 @@
         <div class="grid">
           <div class="card stat"><div class="value" id="v-partenaires-confirmes">-</div><div class="label">Partenaires confirmés</div></div>
           <div class="card stat"><div class="value" id="v-partenaires-presomptifs">-</div><div class="label">Partenaires présomptifs</div></div>
+          <div class="card stat"><div class="value" id="v-etablissements">-</div><div class="label">Établissements inscrits</div></div>
           <div class="card stat"><div class="value" id="v-equipes-attendues">-</div><div class="label">Équipes attendues</div></div>
           <div class="card stat"><div class="value" id="v-capacite-potentielle">-</div><div class="label">Capacité potentielle</div></div>
         </div>
@@ -71,10 +73,21 @@
     <div class="card">
       <details>
         <summary>Calendrier</summary>
-        <p class="section-hint">Échéances-types calculées par rapport à la date de l'événement - indicatif, à ajuster selon l'édition.</p>
+        <p class="section-hint">Échéances-types calculées par rapport à la date de l'événement - modifiables ci-dessous, une fois pour toutes les éditions.</p>
         <table>
           <thead><tr><th>Échéance</th><th>Date</th><th></th></tr></thead>
           <tbody id="calendrier-body"><tr><td colspan="3" class="hint">Chargement…</td></tr></tbody>
+        </table>
+
+        <h4 style="margin-top:20px">Modifier les jalons</h4>
+        <form class="inline-form" id="form-jalon">
+          <div><label>Jours avant l'événement</label><input name="jours_avant" type="number" min="0" required></div>
+          <div style="grid-column:2/-1"><label>Libellé</label><input name="libelle_jalon" required></div>
+          <div><button type="submit">Ajouter</button></div>
+        </form>
+        <table>
+          <thead><tr><th>Jours avant</th><th>Libellé</th><th></th></tr></thead>
+          <tbody id="jalons-body"><tr><td colspan="3" class="hint">Chargement…</td></tr></tbody>
         </table>
       </details>
     </div>
@@ -91,6 +104,9 @@
           <div><label>Thème</label><input name="theme" placeholder="Soigner, secourir, servir"></div>
           <div><label>Date de l'événement</label><input name="date_evenement" type="date"></div>
           <div><label>Lieu</label><input name="lieu" placeholder="Complexe Jacques Chirac, Montauban"></div>
+          <div style="grid-column:1/-1"><label>Logo de l'édition (lien Drive/image)</label>
+            <input name="logo_url" placeholder="https://drive.google.com/... ou toute URL d'image publique">
+          </div>
           <div><label>Objectif jeunes</label><input name="objectif_jeunes" type="number"></div>
           <div><label>Objectif équipes</label><input name="objectif_equipes" type="number"></div>
           <div><label>Équipes confirmées</label><input name="equipes_confirmees" type="number" placeholder="À mettre à jour au fil des inscriptions"></div>
@@ -128,6 +144,9 @@
       if (d.edition) {
         document.getElementById('hero-title').textContent = d.edition.annee + ' - ' + (d.edition.theme || 'Thème non défini');
         document.getElementById('hero-meta').textContent = (d.edition.date_evenement || 'Date non définie') + ' · ' + (d.edition.lieu || 'Lieu non défini');
+        const logoEl = document.getElementById('hero-logo');
+        if (d.edition.logo_url) { logoEl.src = d.edition.logo_url; logoEl.style.display = ''; }
+        else { logoEl.style.display = 'none'; }
       } else {
         document.getElementById('hero-title').textContent = 'Aucune édition active';
         document.getElementById('hero-meta').innerHTML = 'Ouvrez "Gestion des éditions" ci-dessous pour en créer une et la marquer active.';
@@ -135,12 +154,14 @@
       document.getElementById('hero-jours').textContent = d.joursRestants === null ? '-' : d.joursRestants;
 
       document.getElementById('v-equipes-confirmees').textContent = d.equipes.confirmees || '-';
+      document.getElementById('v-equipes-confirmees-label').textContent = d.equipes.source === 'reelle' ? 'Équipes confirmées' : 'Équipes confirmées (estimé)';
       document.getElementById('v-capacite').textContent = d.ateliers.capaciteConfirmee;
       document.getElementById('v-ateliers-manquants').textContent = d.ateliers.manquants;
       document.getElementById('v-solde').textContent = euros(d.budget.reel.solde);
 
       document.getElementById('v-partenaires-confirmes').textContent = d.partenaires.confirmes;
       document.getElementById('v-partenaires-presomptifs').textContent = d.partenaires.presomptifs;
+      document.getElementById('v-etablissements').textContent = d.etablissements.total;
       document.getElementById('v-equipes-attendues').textContent = d.equipes.attendues || '-';
       document.getElementById('v-capacite-potentielle').textContent = d.ateliers.capaciteTotalePotentielle;
 
@@ -203,6 +224,7 @@
       form.theme.value = e.theme || '';
       form.date_evenement.value = e.date_evenement || '';
       form.lieu.value = e.lieu || '';
+      form.logo_url.value = e.logo_url || '';
       form.objectif_jeunes.value = e.objectif_jeunes || '';
       form.objectif_equipes.value = e.objectif_equipes || '';
       form.equipes_confirmees.value = e.equipes_confirmees || '';
@@ -240,7 +262,34 @@
       else alert('Erreur : ' + res.error.message);
     });
 
-    loadVision(); loadEditions();
+    async function loadJalons() {
+      const res = await apiGet('generale.jalons.list');
+      const tbody = document.getElementById('jalons-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="3" class="hint">Aucun jalon défini.</td></tr>'; return; }
+      tbody.innerHTML = res.data.map(j => `
+        <tr>
+          <td>${j.jours_avant}</td><td>${j.label}</td>
+          <td><button class="secondary" onclick="deleteJalon('${j.id}')">Supprimer</button></td>
+        </tr>`).join('');
+    }
+
+    async function deleteJalon(id) {
+      if (!confirm('Supprimer ce jalon ?')) return;
+      const res = await apiPost('generale.jalons.delete', { id: id });
+      if (res.success) { loadJalons(); loadVision(); }
+      else alert('Erreur : ' + res.error.message);
+    }
+
+    document.getElementById('form-jalon').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.label = payload.libelle_jalon;
+      const res = await apiPost('generale.jalons.create', payload);
+      if (res.success) { e.target.reset(); loadJalons(); loadVision(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    loadVision(); loadEditions(); loadJalons();
   </script>
 </body>
 </html>

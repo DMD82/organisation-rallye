@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Inscription établissement</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar"><div class="topbar-row"><h1>Rallye Citoyen - Inscription établissement</h1></div></header>
+
+  <main style="max-width:600px">
+    <div class="card" id="form-card">
+      <p class="hint">
+        Votre établissement souhaite participer au Rallye Citoyen ? Remplissez ce
+        formulaire, l'équipe organisatrice reviendra vers vous pour finaliser l'inscription.
+      </p>
+      <form id="form-inscription">
+        <div style="position:absolute;left:-9999px" aria-hidden="true">
+          <label>Ne pas remplir<input name="hp" tabindex="-1" autocomplete="off"></label>
+        </div>
+
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Nom de l'établissement *</label>
+          <input name="nom_entite" style="width:100%" required>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Niveau</label>
+          <input name="niveau" style="width:100%" placeholder="Collège, lycée, MFR...">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Nom du référent</label>
+          <input name="referent_nom" style="width:100%">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Email du référent</label>
+          <input name="referent_email" type="email" style="width:100%">
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Nombre d'équipes prévues</label>
+          <input name="nb_equipes_prevues" type="number" min="0" style="width:100%">
+        </div>
+        <button type="submit">Envoyer l'inscription</button>
+      </form>
+    </div>
+    <div class="card" id="confirmation-card" style="display:none">
+      <p>Merci ! L'inscription a bien été transmise, l'équipe organisatrice reviendra vers vous.</p>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    document.getElementById('form-inscription').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const res = await apiPost('public.etablissements.candidater', payload);
+      if (res.success) {
+        document.getElementById('form-card').style.display = 'none';
+        document.getElementById('confirmation-card').style.display = '';
+      } else {
+        alert('Erreur : ' + res.error.message);
+      }
+    });
+  </script>
+</body>
+</html>

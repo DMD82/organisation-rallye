@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Réunions</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card">
+      <p class="hint">
+        Réunions internes, indépendantes d'une édition précise (une réunion de
+        préparation peut avoir lieu avant même qu'une édition suivante existe).
+        Rattachez-la à une édition seulement si c'est pertinent.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3 id="form-reunion-title">Ajouter une réunion</h3>
+      <form id="form-reunion">
+        <input type="hidden" name="id" value="">
+        <div class="inline-form" style="margin-bottom:12px">
+          <div><label>Date</label><input name="date" type="date"></div>
+          <div><label>Titre</label><input name="titre" placeholder="Réunion partenaires" required></div>
+          <div><label>Lieu</label><input name="lieu"></div>
+          <div><label>Édition (facultatif)</label><select name="edition_id" id="select-edition"><option value="">- non rattachée -</option></select></div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Ordre du jour</label>
+          <textarea name="ordre_du_jour" rows="3" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Compte-rendu</label>
+          <textarea name="compte_rendu" rows="5" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button type="submit" id="form-reunion-submit">Ajouter</button>
+          <button type="button" class="secondary" id="form-reunion-cancel" style="display:none" onclick="resetReunionForm()">Annuler</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Réunions</h3>
+        <button class="secondary" onclick="exportCSV('reunions', reunionsData)">Exporter CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Titre</th><th>Lieu</th><th></th></tr></thead>
+        <tbody id="reunions-body"><tr><td colspan="4" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('reunions.html');
+
+    let reunionsData = [];
+    let editionsData = [];
+
+    async function loadEditionsForSelect() {
+      const res = await apiGet('generale.editions.list');
+      if (!res.success) return;
+      editionsData = res.data;
+      document.getElementById('select-edition').innerHTML = '<option value="">- non rattachée -</option>' +
+        editionsData.map(e => `<option value="${e.id}">${e.annee}</option>`).join('');
+    }
+
+    async function loadReunions() {
+      const res = await apiGet('reunions.list');
+      const tbody = document.getElementById('reunions-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="4" class="hint">Aucune réunion pour l\'instant.</td></tr>'; return; }
+      reunionsData = res.data;
+      tbody.innerHTML = res.data.map(r => `
+        <tr>
+          <td>${r.date || ''}</td>
+          <td>${r.titre}</td>
+          <td>${r.lieu || ''}</td>
+          <td style="display:flex;gap:6px">
+            <button class="secondary" onclick="showActionsModal('${r.id}', '${(r.titre || '').replace(/'/g, "\\'")}')">Actions</button>
+            <button class="secondary" onclick="editReunion('${r.id}')">Modifier</button>
+            <button class="secondary" onclick="deleteReunion('${r.id}')">Supprimer</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    function editReunion(id) {
+      const r = reunionsData.find(x => x.id === id);
+      if (!r) return;
+      const form = document.getElementById('form-reunion');
+      form.id.value = r.id;
+      form.date.value = r.date || '';
+      form.titre.value = r.titre || '';
+      form.lieu.value = r.lieu || '';
+      form.edition_id.value = r.edition_id || '';
+      form.ordre_du_jour.value = r.ordre_du_jour || '';
+      form.compte_rendu.value = r.compte_rendu || '';
+      document.getElementById('form-reunion-title').textContent = 'Modifier la réunion';
+      document.getElementById('form-reunion-submit').textContent = 'Enregistrer';
+      document.getElementById('form-reunion-cancel').style.display = '';
+      form.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function resetReunionForm() {
+      const form = document.getElementById('form-reunion');
+      form.reset();
+      form.id.value = '';
+      document.getElementById('form-reunion-title').textContent = 'Ajouter une réunion';
+      document.getElementById('form-reunion-submit').textContent = 'Ajouter';
+      document.getElementById('form-reunion-cancel').style.display = 'none';
+    }
+
+    async function deleteReunion(id) {
+      if (!confirm('Supprimer définitivement cette réunion ?')) return;
+      const res = await apiPost('reunions.delete', { id: id });
+      if (res.success) loadReunions();
+      else alert('Erreur : ' + res.error.message);
+    }
+
+    document.getElementById('form-reunion').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      const isEdit = !!payload.id;
+      const res = await apiPost(isEdit ? 'reunions.update' : 'reunions.create', payload);
+      if (res.success) { resetReunionForm(); loadReunions(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    loadEditionsForSelect();
+    loadReunions();
+  </script>
+</body>
+</html>

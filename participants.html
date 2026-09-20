@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Participants</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card" id="edition-banner"><div class="hint">Chargement de l'édition active…</div></div>
+
+    <!-- Établissements -->
+    <div class="card">
+      <details open>
+        <summary>Établissements</summary>
+
+        <h4>Ajouter un établissement</h4>
+        <form class="inline-form" id="form-etablissement">
+          <div><label>Établissement</label><input name="nom_entite" required></div>
+          <div><label>Référent</label><input name="referent_nom"></div>
+          <div><label>Email référent</label><input name="referent_email" type="email"></div>
+          <div><label>Niveau</label><input name="niveau" placeholder="Collège, lycée, MFR..."></div>
+          <div><label>Nb équipes prévues</label><input name="nb_equipes_prevues" type="number" min="0"></div>
+          <div><label>Statut</label>
+            <select name="statut">
+              <option value="a_inscrire">À inscrire</option>
+              <option value="inscrit">Inscrit</option>
+              <option value="confirme">Confirmé</option>
+              <option value="decline">Décliné</option>
+            </select>
+          </div>
+          <div><button type="submit" id="btn-etablissement-submit">Ajouter</button></div>
+        </form>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+          <h4 style="margin:0">Établissements de l'édition</h4>
+          <div style="display:flex;gap:8px">
+            <button class="secondary" id="btn-import-etablissements" onclick="showImportModal({
+              title: 'Établissements',
+              action: 'participants.etablissements.create',
+              fields: [
+                {key:'nom_entite', label:'Établissement', required:true},
+                {key:'referent_nom', label:'Référent'},
+                {key:'referent_email', label:'Email référent'},
+                {key:'niveau', label:'Niveau'},
+                {key:'nb_equipes_prevues', label:'Nb équipes prévues'},
+                {key:'statut', label:'Statut'}
+              ],
+              defaults: { edition_id: editionActiveId },
+              onDone: loadEtablissements
+            })">Importer</button>
+            <button class="secondary" onclick="exportCSV('etablissements', etablissementsData)">Exporter CSV</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Établissement</th><th>Référent</th><th>Niveau</th><th>Équipes prévues</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="etablissements-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
+        </table>
+      </details>
+    </div>
+
+    <!-- Équipes -->
+    <div class="card">
+      <details open>
+        <summary>Équipes</summary>
+
+        <h4>Ajouter une équipe</h4>
+        <form class="inline-form" id="form-equipe">
+          <div><label>N° équipe</label><input name="numero_equipe" placeholder="Ex. 42"></div>
+          <div><label>Nom d'équipe</label><input name="nom_equipe" required></div>
+          <div><label>Établissement</label>
+            <select name="participation_id" id="select-etablissement"><option value="">- non renseigné -</option></select>
+          </div>
+          <div><label>Effectif</label><input name="effectif" type="number" min="0"></div>
+          <div><label>Classe de défense ?</label>
+            <select name="classe_defense"><option value="false">Non</option><option value="true">Oui</option></select>
+          </div>
+          <div><label>Statut de présence</label>
+            <select name="statut_presence">
+              <option value="attendue">Attendue</option>
+              <option value="presente">Présente</option>
+              <option value="absente">Absente</option>
+            </select>
+          </div>
+          <div><button type="submit" id="btn-equipe-submit">Ajouter</button></div>
+        </form>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+          <h4 style="margin:0">Équipes de l'édition</h4>
+          <div style="display:flex;gap:8px">
+            <button class="secondary" id="btn-import-equipes" onclick="showImportModal({
+              title: 'Équipes',
+              action: 'participants.equipes.create',
+              fields: [
+                {key:'numero_equipe', label:'N° équipe'},
+                {key:'nom_equipe', label:'Nom equipe', required:true},
+                {key:'effectif', label:'Effectif'},
+                {key:'classe_defense', label:'Classe de défense (true/false)'},
+                {key:'statut_presence', label:'Statut de présence'}
+              ],
+              defaults: { edition_id: editionActiveId },
+              onDone: loadEquipes
+            })">Importer</button>
+            <button class="secondary" onclick="exportCSV('equipes', equipesData)">Exporter CSV</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>N°</th><th>Nom</th><th>Établissement</th><th>Effectif</th><th>Classe défense</th><th>Statut</th></tr></thead>
+          <tbody id="equipes-body"><tr><td colspan="6" class="hint">Chargement…</td></tr></tbody>
+        </table>
+      </details>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('participants.html');
+
+    let etablissementsData = [];
+    let equipesData = [];
+    let editionActiveId = null;
+
+    async function init() {
+      const editionRes = await apiGet('generale.editions.active');
+      const banner = document.getElementById('edition-banner');
+      if (!editionRes.success || !editionRes.data) {
+        banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
+        document.getElementById('btn-etablissement-submit').disabled = true;
+        document.getElementById('btn-equipe-submit').disabled = true;
+        document.getElementById('btn-import-etablissements').disabled = true;
+        document.getElementById('btn-import-equipes').disabled = true;
+        return;
+      }
+      editionActiveId = editionRes.data.id;
+      banner.innerHTML = `<div class="hint">Édition active</div><h2 style="margin:4px 0">${editionRes.data.annee} - ${editionRes.data.theme || ''}</h2>`;
+      loadEtablissements();
+      loadEquipes();
+    }
+
+    async function loadEtablissements() {
+      const res = await apiGet('participants.etablissements.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('etablissements-body');
+      const select = document.getElementById('select-etablissement');
+      if (!res.success || !res.data.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="hint">Aucun établissement pour l\'instant.</td></tr>';
+        select.innerHTML = '<option value="">- non renseigné -</option>';
+        return;
+      }
+      etablissementsData = res.data;
+      tbody.innerHTML = res.data.map(p => `
+        <tr>
+          <td>${p.entite_nom}</td>
+          <td>${p.referent_nom || ''}</td>
+          <td>${p.niveau || ''}</td>
+          <td>${p.nb_equipes_prevues || ''}</td>
+          <td><span class="badge ${p.statut}">${p.statut}</span></td>
+          <td><button class="secondary" onclick="showDocumentsModal('etablissement', '${p.id}', '${(p.entite_nom || '').replace(/'/g, "\\'")}')">Documents</button></td>
+        </tr>`).join('');
+      select.innerHTML = '<option value="">- non renseigné -</option>' +
+        res.data.map(p => `<option value="${p.id}">${p.entite_nom}</option>`).join('');
+    }
+
+    async function loadEquipes() {
+      const res = await apiGet('participants.equipes.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('equipes-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="6" class="hint">Aucune équipe pour l\'instant.</td></tr>'; return; }
+      equipesData = res.data;
+      tbody.innerHTML = res.data.map(e => `
+        <tr>
+          <td>${e.numero_equipe || ''}</td>
+          <td>${e.nom_equipe}</td>
+          <td>${e.etablissement_nom || ''}</td>
+          <td>${e.effectif || ''}</td>
+          <td>${e.classe_defense === true || e.classe_defense === 'TRUE' ? 'Oui' : 'Non'}</td>
+          <td><span class="badge ${e.statut_presence === 'absente' ? 'decline' : (e.statut_presence === 'presente' ? 'confirme' : 'a_inviter')}">${e.statut_presence}</span></td>
+        </tr>`).join('');
+    }
+
+    document.getElementById('form-etablissement').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.edition_id = editionActiveId;
+      const res = await apiPost('participants.etablissements.create', payload);
+      if (res.success) { e.target.reset(); loadEtablissements(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    document.getElementById('form-equipe').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.edition_id = editionActiveId;
+      const res = await apiPost('participants.equipes.create', payload);
+      if (res.success) { e.target.reset(); loadEquipes(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    init();
+  </script>
+</body>
+</html>

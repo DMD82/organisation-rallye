@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Remerciements</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card" id="edition-banner"><div class="hint">Chargement de l'édition active…</div></div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div>
+          <h3 style="margin:0">Générer la liste</h3>
+          <p class="hint" style="margin:6px 0 0">
+            Ajoute automatiquement les mécènes ayant versé, les partenaires et autorités
+            confirmés, et les bénévoles confirmés - sans doublon si vous relancez.
+            Un modèle de mail "Remerciement" est disponible dans
+            <a href="communication.html">Communication</a>.
+          </p>
+        </div>
+        <button id="btn-generer" onclick="genererListe()">Générer la liste</button>
+      </div>
+      <div id="generer-resultat" class="hint" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">À remercier</h3>
+        <button class="secondary" onclick="exportCSV('remerciements', remerciementsData)">Exporter CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>Nom</th><th>Type</th><th>Statut d'envoi</th><th></th></tr></thead>
+        <tbody id="remerciements-body"><tr><td colspan="4" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('remerciements.html');
+
+    let remerciementsData = [];
+    let editionActiveId = null;
+
+    const LABELS_TYPE = { mecene: 'Mécène', partenaire: 'Partenaire', autorite: 'Autorité', benevole: 'Bénévole', autre: 'Autre' };
+
+    async function init() {
+      const editionRes = await apiGet('generale.editions.active');
+      const banner = document.getElementById('edition-banner');
+      if (!editionRes.success || !editionRes.data) {
+        banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
+        document.getElementById('btn-generer').disabled = true;
+        return;
+      }
+      editionActiveId = editionRes.data.id;
+      banner.innerHTML = `<div class="hint">Édition active</div><h2 style="margin:4px 0">${editionRes.data.annee} - ${editionRes.data.theme || ''}</h2>`;
+      loadRemerciements();
+    }
+
+    async function genererListe() {
+      const btn = document.getElementById('btn-generer');
+      const resEl = document.getElementById('generer-resultat');
+      btn.disabled = true;
+      resEl.textContent = 'Génération en cours…';
+      const res = await apiPost('remerciements.generer', { edition_id: editionActiveId });
+      btn.disabled = false;
+      if (res.success) {
+        resEl.textContent = res.data.ajoutes + ' nouvelle(s) entrée(s) ajoutée(s).';
+        loadRemerciements();
+      } else {
+        resEl.textContent = 'Erreur : ' + res.error.message;
+      }
+    }
+
+    async function loadRemerciements() {
+      const res = await apiGet('remerciements.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('remerciements-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="4" class="hint">Aucun remerciement pour l\'instant - cliquez "Générer la liste".</td></tr>'; return; }
+      remerciementsData = res.data;
+      tbody.innerHTML = res.data.map(r => `
+        <tr>
+          <td>${r.nom}</td>
+          <td>${LABELS_TYPE[r.type] || r.type}</td>
+          <td><span class="badge ${r.statut_envoi === 'envoye' ? 'confirme' : 'a_inviter'}">${r.statut_envoi}</span></td>
+          <td>${r.statut_envoi !== 'envoye' ? `<button class="secondary" onclick="marquerEnvoye('${r.id}')">Marquer envoyé</button>` : ''}</td>
+        </tr>`).join('');
+    }
+
+    async function marquerEnvoye(id) {
+      const res = await apiPost('remerciements.update', { id: id, statut_envoi: 'envoye', date_envoi: new Date().toISOString().slice(0, 10) });
+      if (res.success) loadRemerciements();
+      else alert('Erreur : ' + res.error.message);
+    }
+
+    init();
+  </script>
+</body>
+</html>

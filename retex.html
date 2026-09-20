@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - RETEX et Bilan</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card" id="edition-banner"><div class="hint">Chargement de l'édition active…</div></div>
+
+    <!-- Import résultats notation -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div>
+          <h3 style="margin:0">Importer les résultats depuis la notation</h3>
+          <p class="hint" style="margin:6px 0 0">
+            Lit l'onglet "Somme des Notes" du Sheet de notation (nombre d'équipes, score moyen,
+            meilleure équipe) et les enregistre ci-dessous - lecture seule, ne modifie rien côté
+            notation. Nécessite <code>NOTATION_SHEET_ID</code> dans les Propriétés du script.
+          </p>
+        </div>
+        <button id="btn-import-resultats" onclick="importerResultats()">Importer</button>
+      </div>
+      <div id="import-resultat" class="hint" style="margin-top:10px"></div>
+    </div>
+
+    <!-- Bilan -->
+    <div class="card">
+      <h3>Bilan de l'édition</h3>
+      <form class="inline-form" id="form-bilan">
+        <div><label>Équipes participantes</label><input name="nb_equipes_participantes" type="number"></div>
+        <div><label>Établissements</label><input name="nb_etablissements" type="number"></div>
+        <div><label>Partenaires mobilisés</label><input name="nb_partenaires_mobilises" type="number"></div>
+        <div><label>Ateliers proposés</label><input name="nb_ateliers_proposes" type="number"></div>
+        <div><label>Score moyen</label><input name="score_moyen" type="number" step="0.1"></div>
+        <div><label>Meilleure équipe</label><input name="meilleure_equipe_nom"></div>
+        <div><label>Note moyenne partenaires (/10)</label><input name="note_partenaires_moyenne" type="number" step="0.1" min="0" max="10"></div>
+        <div><label>Note moyenne participants (/10)</label><input name="note_participants_moyenne" type="number" step="0.1" min="0" max="10"></div>
+      </form>
+      <div style="margin-top:12px">
+        <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Points forts</label>
+        <textarea id="bilan-points-forts" rows="4" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
+      </div>
+      <div style="margin-top:12px">
+        <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Conclusion</label>
+        <textarea id="bilan-conclusion" rows="4" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
+      </div>
+      <button id="btn-save-bilan" onclick="sauverBilan()" style="margin-top:12px">Enregistrer le bilan</button>
+    </div>
+
+    <!-- Difficultés -->
+    <div class="card">
+      <h3>Difficultés remontées</h3>
+      <form class="inline-form" id="form-difficulte">
+        <div style="grid-column:1/-1"><label>Problème identifié</label><input name="probleme" required></div>
+        <div><label>Source</label><input name="source" placeholder="Enseignants, partenaires..."></div>
+        <div><label>Catégorie</label>
+          <select name="categorie">
+            <option value="organisation">Organisation</option>
+            <option value="logistique">Logistique</option>
+            <option value="communication">Communication</option>
+            <option value="securite">Sécurité</option>
+            <option value="accueil">Accueil</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+        <div><label>Statut de suivi</label>
+          <select name="statut_suivi">
+            <option value="a_traiter">À traiter</option>
+            <option value="en_cours">En cours</option>
+            <option value="resolu">Résolu</option>
+          </select>
+        </div>
+        <div><button type="submit">Ajouter</button></div>
+      </form>
+      <table>
+        <thead><tr><th>Problème</th><th>Source</th><th>Catégorie</th><th>Statut</th><th></th></tr></thead>
+        <tbody id="difficultes-body"><tr><td colspan="5" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Retours partenaires -->
+    <div class="card">
+      <h3>Retours partenaires</h3>
+      <form class="inline-form" id="form-retour">
+        <div><label>Partenaire</label><input name="nom_entite" required></div>
+        <div><label>Note (/10)</label><input name="note" type="number" min="0" max="10"></div>
+        <div><label>Satisfaction</label>
+          <select name="satisfaction">
+            <option value="tres_satisfait">Très satisfait</option>
+            <option value="satisfait">Satisfait</option>
+            <option value="a_ameliorer">À améliorer</option>
+            <option value="insatisfait">Insatisfait</option>
+          </select>
+        </div>
+        <div style="grid-column:1/-1"><label>Commentaire</label><input name="commentaire"></div>
+        <div><button type="submit">Ajouter</button></div>
+      </form>
+      <table>
+        <thead><tr><th>Partenaire</th><th>Note</th><th>Satisfaction</th><th>Commentaire</th></tr></thead>
+        <tbody id="retours-body"><tr><td colspan="4" class="hint">Chargement…</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('retex.html');
+
+    let editionActiveId = null;
+
+    async function init() {
+      const editionRes = await apiGet('generale.editions.active');
+      const banner = document.getElementById('edition-banner');
+      if (!editionRes.success || !editionRes.data) {
+        banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
+        document.getElementById('btn-import-resultats').disabled = true;
+        document.getElementById('btn-save-bilan').disabled = true;
+        return;
+      }
+      editionActiveId = editionRes.data.id;
+      banner.innerHTML = `<div class="hint">Édition active</div><h2 style="margin:4px 0">${editionRes.data.annee} - ${editionRes.data.theme || ''}</h2>`;
+      loadBilan();
+      loadDifficultes();
+      loadRetours();
+    }
+
+    async function loadBilan() {
+      const res = await apiGet('retex.bilan', { edition_id: editionActiveId });
+      if (!res.success || !res.data) return;
+      const b = res.data;
+      const form = document.getElementById('form-bilan');
+      ['nb_equipes_participantes', 'nb_etablissements', 'nb_partenaires_mobilises', 'nb_ateliers_proposes',
+       'score_moyen', 'meilleure_equipe_nom', 'note_partenaires_moyenne', 'note_participants_moyenne'].forEach(k => {
+        if (form[k]) form[k].value = b[k] || '';
+      });
+      document.getElementById('bilan-points-forts').value = b.points_forts || '';
+      document.getElementById('bilan-conclusion').value = b.conclusion || '';
+    }
+
+    async function sauverBilan() {
+      const form = document.getElementById('form-bilan');
+      const payload = Object.fromEntries(new FormData(form).entries());
+      payload.edition_id = editionActiveId;
+      payload.points_forts = document.getElementById('bilan-points-forts').value;
+      payload.conclusion = document.getElementById('bilan-conclusion').value;
+      const res = await apiPost('retex.bilan.save', payload);
+      if (res.success) alert('Bilan enregistré.');
+      else alert('Erreur : ' + res.error.message);
+    }
+
+    async function importerResultats() {
+      const btn = document.getElementById('btn-import-resultats');
+      const resEl = document.getElementById('import-resultat');
+      btn.disabled = true;
+      resEl.textContent = 'Import en cours…';
+      const res = await apiPost('retex.importResultats', { edition_id: editionActiveId });
+      btn.disabled = false;
+      if (res.success) {
+        resEl.textContent = res.data.nb_equipes_participantes + ' équipes, score moyen ' + res.data.score_moyen + ', meilleure équipe : ' + res.data.meilleure_equipe_nom;
+        loadBilan();
+      } else {
+        resEl.textContent = 'Erreur : ' + res.error.message;
+      }
+    }
+
+    async function loadDifficultes() {
+      const res = await apiGet('retex.difficultes.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('difficultes-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="hint">Aucune difficulté remontée pour l\'instant.</td></tr>'; return; }
+      tbody.innerHTML = res.data.map(d => `
+        <tr>
+          <td>${d.probleme}</td><td>${d.source || ''}</td><td>${d.categorie}</td>
+          <td><span class="badge ${d.statut_suivi === 'resolu' ? 'confirme' : (d.statut_suivi === 'en_cours' ? 'invite' : 'a_inviter')}">${d.statut_suivi}</span></td>
+          <td><button class="secondary" onclick="deleteDifficulte('${d.id}')">Supprimer</button></td>
+        </tr>`).join('');
+    }
+
+    async function deleteDifficulte(id) {
+      if (!confirm('Supprimer cette difficulté ?')) return;
+      const res = await apiPost('retex.difficultes.delete', { id: id });
+      if (res.success) loadDifficultes();
+      else alert('Erreur : ' + res.error.message);
+    }
+
+    document.getElementById('form-difficulte').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.edition_id = editionActiveId;
+      const res = await apiPost('retex.difficultes.create', payload);
+      if (res.success) { e.target.reset(); loadDifficultes(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    async function loadRetours() {
+      const res = await apiGet('retex.retours.list', { edition_id: editionActiveId });
+      const tbody = document.getElementById('retours-body');
+      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="4" class="hint">Aucun retour pour l\'instant.</td></tr>'; return; }
+      tbody.innerHTML = res.data.map(r => `
+        <tr><td>${r.entite_nom}</td><td>${r.note || ''}</td><td>${r.satisfaction}</td><td>${r.commentaire || ''}</td></tr>`).join('');
+    }
+
+    document.getElementById('form-retour').addEventListener('submit', async e => {
+      e.preventDefault();
+      const payload = Object.fromEntries(new FormData(e.target).entries());
+      payload.edition_id = editionActiveId;
+      const res = await apiPost('retex.retours.create', payload);
+      if (res.success) { e.target.reset(); loadRetours(); }
+      else alert('Erreur : ' + res.error.message);
+    });
+
+    init();
+  </script>
+</body>
+</html>
