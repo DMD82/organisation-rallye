@@ -50,6 +50,12 @@ async function apiPost(action, payload) {
   return data;
 }
 
+function esc(v) {
+  return String(v === undefined || v === null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function euros(n) {
   return Number(n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 }
@@ -62,7 +68,12 @@ function euros(n) {
 function exportCSV(filename, rows) {
   if (!rows || !rows.length) { alert('Rien à exporter.'); return; }
   const headers = Object.keys(rows[0]);
-  const escape = v => '"' + String(v === undefined || v === null ? '' : v).replace(/"/g, '""') + '"';
+  const escape = v => {
+    let t = String(v === undefined || v === null ? '' : v);
+    // Une cellule qui commence par = + - @ serait lue comme une formule par Excel.
+    if (/^[=+\-@]/.test(t) && isNaN(Number(t))) t = "'" + t;
+    return '"' + t.replace(/"/g, '""') + '"';
+  };
   const lines = [
     headers.map(escape).join(','),
     ...rows.map(r => headers.map(h => escape(r[h])).join(','))
@@ -129,7 +140,7 @@ async function showDocumentsModal(recordType, recordId, recordLabel) {
   overlay.innerHTML = `
     <div class="modal-box">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 style="margin:0">Documents - ${recordLabel}</h3>
+        <h3 style="margin:0">Documents - ${esc(recordLabel)}</h3>
         <button class="secondary" onclick="closeDocumentsModal()">Fermer</button>
       </div>
       <div id="doc-modal-list" style="margin:16px 0"><div class="hint">Chargement…</div></div>
@@ -148,7 +159,7 @@ async function showDocumentsModal(recordType, recordId, recordLabel) {
     if (!res.success || !res.data.length) { listEl.innerHTML = '<div class="hint">Aucun document lié pour l\'instant.</div>'; return; }
     listEl.innerHTML = res.data.map(d => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-        <a href="${d.lien_drive}" target="_blank">${d.titre}</a>
+        <a href="${esc(d.lien_drive)}" target="_blank" rel="noopener">${esc(d.titre)}</a>
         <button class="secondary" onclick="deleteDocumentLie_('${d.id}', '${recordType}', '${recordId}')">Supprimer</button>
       </div>`).join('');
   }
@@ -179,7 +190,7 @@ async function deleteDocumentLie_(docId, recordType, recordId) {
         ? '<div class="hint">Aucun document lié pour l\'instant.</div>'
         : res2.data.map(d => `
           <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-            <a href="${d.lien_drive}" target="_blank">${d.titre}</a>
+            <a href="${esc(d.lien_drive)}" target="_blank" rel="noopener">${esc(d.titre)}</a>
             <button class="secondary" onclick="deleteDocumentLie_('${d.id}', '${recordType}', '${recordId}')">Supprimer</button>
           </div>`).join('');
     }
