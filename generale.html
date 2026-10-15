@@ -73,27 +73,23 @@
     <div class="card">
       <details>
         <summary>Calendrier</summary>
-        <p class="section-hint">Échéances-types calculées par rapport à la date de l'événement - modifiables ci-dessous, une fois pour toutes les éditions.</p>
+        <p class="section-hint">Modifiez directement une date ou un libellé dans le tableau : c'est enregistré à la sortie du champ. Les dates restent calées sur la date de l'événement (si elle bouge, tout se décale).</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
           <button class="secondary" id="btn-frise-png">Frise en image (PNG)</button>
           <button class="secondary" id="btn-frise-xlsx">Frise en Excel</button>
         </div>
         <div id="frise-conteneur" style="border:1px solid var(--border);border-radius:8px;margin-bottom:16px;padding:8px"></div>
         <table>
-          <thead><tr><th>Échéance</th><th>Date</th><th></th></tr></thead>
-          <tbody id="calendrier-body"><tr><td colspan="3" class="hint">Chargement…</td></tr></tbody>
+          <thead><tr><th>Date</th><th>Échéance</th><th>Écart au Jour J</th><th></th></tr></thead>
+          <tbody id="calendrier-body"><tr><td colspan="4" class="hint">Chargement…</td></tr></tbody>
         </table>
 
-        <h4 style="margin-top:20px">Modifier les jalons</h4>
+        <h4 style="margin-top:20px">Ajouter une échéance</h4>
         <form class="inline-form" id="form-jalon">
-          <div><label>Jours avant l'événement</label><input name="jours_avant" type="number" min="0" required></div>
+          <div><label>Date</label><input name="date_jalon" type="date" required></div>
           <div style="grid-column:2/-1"><label>Libellé</label><input name="libelle_jalon" required></div>
           <div><button type="submit">Ajouter</button></div>
         </form>
-        <table>
-          <thead><tr><th>Jours avant</th><th>Libellé</th><th></th></tr></thead>
-          <tbody id="jalons-body"><tr><td colspan="3" class="hint">Chargement…</td></tr></tbody>
-        </table>
       </details>
     </div>
 
@@ -201,16 +197,58 @@
       friseTitre = d.edition ? 'Rallye Citoyen ' + d.edition.annee + ' - calendrier' : 'Calendrier';
       Frise.afficher(document.getElementById('frise-conteneur'), friseJalons, friseDate, friseTitre);
 
+      renderCalendrier();
+    }
+
+    function joursEntre(dateIso, jourJIso) {
+      const t = s => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10));
+      return Math.round((t(jourJIso) - t(dateIso)) / 86400000);
+    }
+
+    function renderCalendrier() {
       const calBody = document.getElementById('calendrier-body');
-      if (!d.calendrier || !d.calendrier.length) {
-        calBody.innerHTML = '<tr><td colspan="3" class="hint">Renseignez la date de l\'événement sur l\'édition active pour voir le calendrier.</td></tr>';
-      } else {
-        calBody.innerHTML = d.calendrier.map(j => `
-          <tr style="${j.passe ? 'opacity:0.5' : ''}">
-            <td>${j.label}</td><td>${j.date}</td>
-            <td>${j.passe ? '<span class="badge decline">passé</span>' : ''}</td>
-          </tr>`).join('');
+      calBody.textContent = '';
+      if (!friseJalons.length) {
+        const tr = document.createElement('tr'), td = document.createElement('td');
+        td.colSpan = 4; td.className = 'hint';
+        td.textContent = "Renseignez la date de l'événement sur l'édition active pour voir le calendrier.";
+        tr.append(td); calBody.append(tr); return;
       }
+      friseJalons.forEach(j => {
+        const tr = document.createElement('tr');
+        if (j.passe) tr.style.opacity = '0.6';
+
+        const dateIn = document.createElement('input');
+        dateIn.type = 'date'; dateIn.value = j.date;
+        dateIn.addEventListener('change', async () => {
+          if (!dateIn.value) { dateIn.value = j.date; return; }
+          const jours = joursEntre(dateIn.value, friseDate);
+          await sauverJalon(j.id, { jours_avant: jours });
+        });
+
+        const labelIn = document.createElement('input');
+        labelIn.type = 'text'; labelIn.value = j.label; labelIn.style.width = '100%';
+        labelIn.addEventListener('change', async () => {
+          if (!labelIn.value.trim()) { labelIn.value = j.label; return; }
+          await sauverJalon(j.id, { label: labelIn.value.trim() });
+        });
+
+        const del = document.createElement('button');
+        del.className = 'secondary'; del.textContent = 'Supprimer';
+        del.addEventListener('click', () => deleteJalon(j.id));
+
+        const c = (...n) => { const td = document.createElement('td'); td.append(...n); return td; };
+        const jr = document.createElement('span');
+        jr.className = 'hint'; jr.textContent = j.jours_avant > 0 ? 'J-' + j.jours_avant : (j.jours_avant === 0 ? 'Jour J' : 'J+' + Math.abs(j.jours_avant));
+        tr.append(c(dateIn), c(labelIn), c(jr), c(del));
+        calBody.append(tr);
+      });
+    }
+
+    async function sauverJalon(id, patch) {
+      const res = await apiPost('generale.jalons.update', Object.assign({ id: id }, patch));
+      if (res.success) loadVision();
+      else { alert('Erreur : ' + res.error.message); loadVision(); }
     }
 
     async function loadEditions() {
@@ -284,34 +322,24 @@
       else alert('Erreur : ' + res.error.message);
     });
 
-    async function loadJalons() {
-      const res = await apiGet('generale.jalons.list');
-      const tbody = document.getElementById('jalons-body');
-      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="3" class="hint">Aucun jalon défini.</td></tr>'; return; }
-      tbody.innerHTML = res.data.map(j => `
-        <tr>
-          <td>${j.jours_avant}</td><td>${j.label}</td>
-          <td><button class="secondary" onclick="deleteJalon('${j.id}')">Supprimer</button></td>
-        </tr>`).join('');
-    }
-
     async function deleteJalon(id) {
       if (!confirm('Supprimer ce jalon ?')) return;
       const res = await apiPost('generale.jalons.delete', { id: id });
-      if (res.success) { loadJalons(); loadVision(); }
+      if (res.success) loadVision();
       else alert('Erreur : ' + res.error.message);
     }
 
     document.getElementById('form-jalon').addEventListener('submit', async e => {
       e.preventDefault();
-      const payload = Object.fromEntries(new FormData(e.target).entries());
-      payload.label = payload.libelle_jalon;
-      const res = await apiPost('generale.jalons.create', payload);
-      if (res.success) { e.target.reset(); loadJalons(); loadVision(); }
+      const f = Object.fromEntries(new FormData(e.target).entries());
+      if (!friseDate) { alert("Renseignez d'abord la date de l'événement sur l'édition active."); return; }
+      const jours = joursEntre(f.date_jalon, friseDate);
+      const res = await apiPost('generale.jalons.create', { jours_avant: jours, label: f.libelle_jalon });
+      if (res.success) { e.target.reset(); loadVision(); }
       else alert('Erreur : ' + res.error.message);
     });
 
-    loadVision(); loadEditions(); loadJalons();
+    loadVision(); loadEditions();
   </script>
 </body>
 </html>
