@@ -5,6 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rallye Citoyen - Partenaires et Ateliers</title>
   <link rel="stylesheet" href="assets/style.css" />
+  <style>
+    .fiche-section { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+    .fiche-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+    .fiche-grid label, .fiche-full label { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 3px; }
+    .fiche-grid input, .fiche-grid select, .fiche-full input, .fiche-full textarea { width: 100%; box-sizing: border-box; }
+    .fiche-full { margin-top: 10px; }
+    .fiche-full textarea { padding: 9px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.9rem; }
+    .filtres { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    .filtres input, .filtres select { padding: 7px 9px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; }
+    .jauge { display: inline-block; width: 56px; height: 6px; background: var(--border); border-radius: 3px; vertical-align: middle; overflow: hidden; }
+    .jauge > span { display: block; height: 100%; background: var(--gold); }
+    td select.statut-inline { padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.8rem; }
+  </style>
 </head>
 <body>
   <header class="topbar" id="topbar"></header>
@@ -13,116 +26,42 @@
     <div class="card" id="edition-banner"><div class="hint">Chargement de l'édition active…</div></div>
 
     <div class="card">
-      <h3>Ajouter un partenaire / atelier</h3>
-      <form id="form-partenariat">
-        <h4 style="margin:0 0 8px">Entité et contact</h4>
-        <div class="inline-form" style="margin-bottom:16px">
-          <div><label>Entité</label><input name="nom_entite" required></div>
-          <div><label>Contact référent</label><input name="contact_nom"></div>
-          <div><label>Email du contact</label><input name="contact_email" type="email"></div>
-          <div><label>Logo (lien Drive/image)</label><input name="logo_url" placeholder="https://drive.google.com/..."></div>
-        </div>
-        <div style="margin-bottom:16px">
-          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Présentation de la structure</label>
-          <input name="presentation_texte" style="width:100%" placeholder="Texte affiché dans le carnet participant">
-        </div>
-
-        <h4 style="margin:0 0 8px">Atelier</h4>
-        <div class="inline-form" style="margin-bottom:16px">
-          <div><label>Type d'atelier</label><input name="type_atelier" placeholder="Ludique, Sportif, Réflexion, Technique..."></div>
-          <div><label>N° atelier</label><input name="numero_atelier"></div>
-          <div><label>Capacité (équipes simultanées)</label><input name="capacite_equipes" placeholder="2"></div>
-        </div>
-        <div style="margin-bottom:16px">
-          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Descriptif de l'atelier</label>
-          <textarea name="descriptif_atelier" rows="3" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
-        </div>
-
-        <h4 style="margin:0 0 8px">Logistique</h4>
-        <div class="inline-form" style="margin-bottom:16px">
-          <div><label>Vient avec un barnum ?</label><select name="venue_avec_barnum"><option value="false">Non</option><option value="true">Oui</option></select></div>
-          <div><label>Tables nécessaires</label><input name="nb_tables" type="number" min="0"></div>
-          <div><label>Chaises nécessaires</label><input name="nb_chaises" type="number" min="0"></div>
-          <div><label>Électricité nécessaire ?</label><select name="electricite_necessaire"><option value="false">Non</option><option value="true">Oui</option></select></div>
-        </div>
-        <div style="margin-bottom:16px">
-          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Contraintes d'emplacement</label>
-          <input name="contraintes_emplacement" style="width:100%" placeholder="Sol en dur, dimension 10x10m, proximité parking...">
-        </div>
-        <div style="margin-bottom:16px">
-          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Autres besoins logistiques</label>
-          <input name="besoins_logistiques" style="width:100%">
-        </div>
-
-        <h4 style="margin:0 0 8px">Statut</h4>
-        <div class="inline-form" style="margin-bottom:16px">
-          <div><label>Statut</label>
-            <select name="statut">
-              <option value="a_solliciter">À solliciter</option>
-              <option value="sollicite">Sollicité</option>
-              <option value="confirme">Confirmé</option>
-              <option value="decline">Décliné</option>
-            </select>
-          </div>
-        </div>
-
-        <h4 style="margin:0 0 8px">Opportunités (reprises depuis le formulaire partenaire)</h4>
-        <p class="section-hint">Ce que le partenaire signale lui-même - activable ensuite en un clic vers les autres modules, sans ressaisie.</p>
-        <div class="inline-form" style="margin-bottom:16px">
-          <div><label>Fournit des goodies ?</label><select name="fournit_goodies"><option value="false">Non</option><option value="true">Oui</option></select></div>
-          <div><label>Autorité à inviter</label><input name="autorite_a_inviter_nom" placeholder="Nom et fonction"></div>
-          <div><label>Contact de cette autorité</label><input name="autorite_a_inviter_contact"></div>
-          <div><label>Contact communication du partenaire</label><input name="contact_communication"></div>
-          <div><label>Contact presse du partenaire</label><input name="contact_presse"></div>
-          <div><label>Propose des défis fil rouge ?</label><select name="souhaite_proposer_defis"><option value="false">Non</option><option value="true">Oui</option></select></div>
-        </div>
-        <div style="margin-bottom:16px">
-          <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:3px">Défis proposés</label>
-          <textarea name="defis_proposes" rows="2" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
-        </div>
-
-        <button type="submit" id="btn-partenariat-submit">Ajouter</button>
+      <h3>Ajouter un partenaire</h3>
+      <form class="inline-form" id="form-ajout-rapide">
+        <div><label>Entité</label><input name="nom_entite" required autofocus></div>
+        <div><label>Contact (facultatif)</label><input name="contact_nom"></div>
+        <div><label>Email (facultatif)</label><input name="contact_email" type="email"></div>
+        <div><button type="submit" id="btn-ajout">Ajouter</button></div>
       </form>
-      <p class="hint">Si l'entité existe déjà dans l'annuaire (ex. déjà mécène), elle est automatiquement réutilisée - pas de doublon créé.</p>
+      <p class="hint">Le reste se complète plus tard avec le bouton Fiche, ou arrive tout seul depuis le formulaire Google. Si l'entité existe déjà dans l'annuaire, elle est réutilisée.</p>
     </div>
 
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 style="margin:0">Partenaires de l'édition</h3>
-        <div style="display:flex;gap:8px">
-          <button class="secondary" id="btn-import-partenaires" onclick="showImportModal({
-            title: 'Partenaires et Ateliers',
-            action: 'partenaires.create',
-            fields: [
-              {key:'nom_entite', label:'Nom entite', required:true},
-              {key:'contact_nom', label:'Nom du contact referent'},
-              {key:'contact_email', label:'Adresse mail du contact referent'},
-              {key:'presentation_texte', label:'Courte description de votre entite'},
-              {key:'autorite_a_inviter_nom', label:'Autorite a inviter'},
-              {key:'type_atelier', label:'Type atelier'},
-              {key:'descriptif_atelier', label:'Courte description atelier'},
-              {key:'capacite_equipes', label:'Combien equipes'},
-              {key:'venue_avec_barnum', label:'Venez-vous avec un barnum'},
-              {key:'nb_tables', label:'Besoin en tables'},
-              {key:'nb_chaises', label:'Besoin en chaises'},
-              {key:'electricite_necessaire', label:'Besoin electricite'},
-              {key:'contraintes_emplacement', label:'Avez-vous des besoins particuliers'},
-              {key:'finance_aussi', label:'Avez-vous la possibilité de financer'},
-              {key:'fournit_goodies', label:'Pouvez-vous fournir des lots ou goodies'},
-              {key:'contact_communication', label:'Avez-vous un service communication'},
-              {key:'contact_presse', label:'Relations privilégiées avec la presse'},
-              {key:'defis_proposes', label:'Si oui, quels seraient les défis'},
-              {key:'notes', label:'Précisions ou commentaires'}
-            ],
-            defaults: { edition_id: editionActiveId },
-            onDone: loadPartenariats
-          })">Importer</button>
-          <button class="secondary" onclick="exportCSV('partenaires', partenariatsData)">Exporter CSV</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <h3 style="margin:0">Partenaires de l'édition <span class="hint" id="compteur"></span></h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="secondary" id="btn-sync" title="Récupère les nouvelles réponses du formulaire Google">Récupérer le formulaire Google</button>
+          <button class="secondary" id="btn-import-partenaires">Importer Excel</button>
+          <button class="secondary" id="btn-export">Exporter CSV</button>
         </div>
       </div>
+      <p class="hint" id="sync-message" style="margin:8px 0 0"></p>
+
+      <div class="filtres" style="margin-top:12px">
+        <input id="filtre-texte" type="search" placeholder="Rechercher une entité">
+        <select id="filtre-statut">
+          <option value="">Tous les statuts</option>
+          <option value="a_solliciter">À solliciter</option>
+          <option value="sollicite">Sollicité</option>
+          <option value="confirme">Confirmé</option>
+          <option value="decline">Décliné</option>
+        </select>
+        <label class="hint"><input type="checkbox" id="filtre-incomplet"> Fiches à compléter seulement</label>
+      </div>
+
       <table>
-        <thead><tr><th></th><th>N° atelier</th><th>Entité</th><th>Contact</th><th>Capacité</th><th>Statut</th><th>Opportunités</th><th></th></tr></thead>
-        <tbody id="partenariats-body"><tr><td colspan="8" class="hint">Chargement…</td></tr></tbody>
+        <thead><tr><th></th><th>N°</th><th>Entité</th><th>Contact</th><th>Capacité</th><th>Statut</th><th>Fiche</th><th>Opportunités</th><th></th></tr></thead>
+        <tbody id="partenariats-body"><tr><td colspan="9" class="hint">Chargement…</td></tr></tbody>
       </table>
     </div>
   </main>
@@ -135,37 +74,89 @@
     let partenariatsData = [];
     let editionActiveId = null;
 
+    const STATUTS = [
+      ['a_solliciter', 'À solliciter'], ['sollicite', 'Sollicité'],
+      ['confirme', 'Confirmé'], ['decline', 'Décliné']
+    ];
+
+    // Champs de la fiche, groupés. type : t texte, n nombre, b oui/non, a zone de texte, e email.
+    const FICHE = [
+      { titre: 'Entité et contact', ouvert: true, champs: [
+        ['contact_nom', 'Contact référent', 't'], ['contact_email', 'Email du contact', 'e'],
+        ['logo_url', 'Logo (lien Drive ou image)', 't'], ['numero_atelier', 'N° atelier', 't'],
+        ['presentation_texte', 'Présentation de la structure', 'a'] ] },
+      { titre: 'Atelier', champs: [
+        ['type_atelier', "Type d'atelier", 't'], ['capacite_equipes', 'Capacité (équipes simultanées)', 'n'],
+        ['descriptif_atelier', "Descriptif de l'atelier", 'a'] ] },
+      { titre: 'Logistique', champs: [
+        ['venue_avec_barnum', 'Vient avec un barnum', 'b'], ['nb_tables', 'Tables', 'n'],
+        ['nb_chaises', 'Chaises', 'n'], ['electricite_necessaire', 'Électricité', 'b'],
+        ['contraintes_emplacement', "Contraintes d'emplacement", 'a'], ['besoins_logistiques', 'Autres besoins', 'a'] ] },
+      { titre: 'Opportunités signalées par le partenaire', champs: [
+        ['finance_aussi', 'Peut financer (mécénat)', 'b'], ['fournit_goodies', 'Fournit des goodies', 'b'],
+        ['autorite_a_inviter_nom', 'Autorité à inviter', 't'], ['autorite_a_inviter_contact', "Contact de l'autorité", 't'],
+        ['contact_communication', 'Contact communication', 't'], ['contact_presse', 'Contact presse', 't'],
+        ['souhaite_proposer_defis', 'Propose des défis', 'b'], ['defis_proposes', 'Défis proposés', 'a'] ] },
+      { titre: 'Suivi', champs: [
+        ['statut', 'Statut', 's'], ['retour_bilan', 'Retour après le rallye', 'a'], ['notes', 'Notes', 'a'] ] }
+    ];
+
+    // Une fiche est complète quand ces champs essentiels sont renseignés.
+    const ESSENTIELS = ['contact_nom', 'contact_email', 'type_atelier', 'descriptif_atelier', 'capacite_equipes', 'presentation_texte'];
+
+    function estVrai(v) { return v === true || v === 'TRUE' || v === 'true'; }
+    function rempli(v) { return v !== undefined && v !== null && String(v).trim() !== ''; }
+    function completude(p) { return Math.round(100 * ESSENTIELS.filter(k => rempli(p[k])).length / ESSENTIELS.length); }
+
+    function el(tag, attrs, ...enfants) {
+      const n = document.createElement(tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => {
+        if (k === 'class') n.className = v;
+        else if (k === 'text') n.textContent = v;
+        else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+        else if (v !== false && v !== null && v !== undefined) n.setAttribute(k, v);
+      });
+      enfants.flat().forEach(c => { if (c !== null && c !== undefined) n.append(c); });
+      return n;
+    }
+
+    function urlSure(u) { return /^https?:\/\//i.test(u || '') ? u : ''; }
+
     async function init() {
       const editionRes = await apiGet('generale.editions.active');
       const banner = document.getElementById('edition-banner');
+      banner.textContent = '';
       if (!editionRes.success || !editionRes.data) {
-        banner.innerHTML = `<div class="hint">Aucune édition active. Allez d'abord dans <a href="generale.html">Générale</a> pour en créer une et la marquer active.</div>`;
-        document.getElementById('btn-partenariat-submit').disabled = true;
+        banner.append(el('div', { class: 'hint' }, "Aucune édition active. Allez d'abord dans ", el('a', { href: 'generale.html', text: 'Générale' }), ' pour en créer une et la marquer active.'));
+        document.getElementById('btn-ajout').disabled = true;
         document.getElementById('btn-import-partenaires').disabled = true;
+        document.getElementById('btn-sync').disabled = true;
         return;
       }
       editionActiveId = editionRes.data.id;
-      banner.innerHTML = `<div class="hint">Édition active</div><h2 style="margin:4px 0">${editionRes.data.annee} - ${editionRes.data.theme || ''}</h2>`;
+      banner.append(el('div', { class: 'hint', text: 'Édition active' }),
+        el('h2', { style: 'margin:4px 0', text: (editionRes.data.annee || '') + ' - ' + (editionRes.data.theme || '') }));
       loadPartenariats();
     }
 
-    function estVrai(v) { return v === true || v === 'TRUE' || v === 'true'; }
+    function filtrer() {
+      const texte = document.getElementById('filtre-texte').value.trim().toLowerCase();
+      const statut = document.getElementById('filtre-statut').value;
+      const incomplet = document.getElementById('filtre-incomplet').checked;
+      return partenariatsData.filter(p =>
+        (!texte || (p.entite_nom || '').toLowerCase().includes(texte)) &&
+        (!statut || p.statut === statut) &&
+        (!incomplet || completude(p) < 100));
+    }
 
     function boutonsOpportunites(p) {
-      const boutons = [];
-      if (p.autorite_a_inviter_nom && !estVrai(p.autorite_invitee_creee)) {
-        boutons.push(`<button class="secondary" onclick="activer('activerInvitation','${p.id}')">→ Autorité</button>`);
-      }
-      if (p.contact_presse && !estVrai(p.presse_contact_cree)) {
-        boutons.push(`<button class="secondary" onclick="activer('activerContactPresse','${p.id}')">→ Presse</button>`);
-      }
-      if (estVrai(p.finance_aussi) && !estVrai(p.mecene_cree)) {
-        boutons.push(`<button class="secondary" onclick="activer('activerMecenat','${p.id}')">→ Mécène</button>`);
-      }
-      if (estVrai(p.fournit_goodies) && !estVrai(p.goodies_ajoutes)) {
-        boutons.push(`<button class="secondary" onclick="activer('activerGoodies','${p.id}')">→ Goodies</button>`);
-      }
-      return boutons.join(' ') || '<span class="hint">-</span>';
+      const b = [];
+      const mk = (txt, action) => el('button', { class: 'secondary', text: txt, onclick: () => activer(action, p.id) });
+      if (p.autorite_a_inviter_nom && !estVrai(p.autorite_invitee_creee)) b.push(mk('→ Autorité', 'activerInvitation'));
+      if (p.contact_presse && !estVrai(p.presse_contact_cree)) b.push(mk('→ Presse', 'activerContactPresse'));
+      if (estVrai(p.finance_aussi) && !estVrai(p.mecene_cree)) b.push(mk('→ Mécène', 'activerMecenat'));
+      if (estVrai(p.fournit_goodies) && !estVrai(p.goodies_ajoutes)) b.push(mk('→ Goodies', 'activerGoodies'));
+      return b.length ? b : [el('span', { class: 'hint', text: '-' })];
     }
 
     async function activer(action, id) {
@@ -174,32 +165,169 @@
       else alert('Erreur : ' + res.error.message);
     }
 
-    async function loadPartenariats() {
-      const res = await apiGet('partenaires.list', { edition_id: editionActiveId });
-      const tbody = document.getElementById('partenariats-body');
-      if (!res.success || !res.data.length) { tbody.innerHTML = '<tr><td colspan="8" class="hint">Aucun partenaire pour l\'instant.</td></tr>'; return; }
-      partenariatsData = res.data;
-      tbody.innerHTML = res.data.map(p => `
-        <tr>
-          <td>${p.logo_url ? `<img src="${p.logo_url}" alt="" style="width:32px;height:32px;object-fit:contain">` : ''}</td>
-          <td>${p.numero_atelier || ''}</td>
-          <td>${p.entite_nom}</td>
-          <td>${p.contact_nom || ''}</td>
-          <td>${p.capacite_equipes || ''}</td>
-          <td><span class="badge ${p.statut}">${p.statut}</span></td>
-          <td>${boutonsOpportunites(p)}</td>
-          <td><button class="secondary" onclick="showDocumentsModal('partenariat', '${p.id}', '${(p.entite_nom || '').replace(/'/g, "\\'")}')">Documents</button></td>
-        </tr>`).join('');
+    async function changerStatut(p, valeur, select) {
+      select.disabled = true;
+      const res = await apiPost('partenaires.update', { id: p.id, statut: valeur });
+      select.disabled = false;
+      if (res.success) p.statut = valeur;
+      else { alert('Erreur : ' + res.error.message); select.value = p.statut; }
     }
 
-    document.getElementById('form-partenariat').addEventListener('submit', async e => {
+    function ligne(p) {
+      const sel = el('select', { class: 'statut-inline' },
+        STATUTS.map(([v, l]) => el('option', { value: v, text: l, selected: p.statut === v ? 'selected' : false })));
+      sel.value = p.statut || 'a_solliciter';
+      sel.addEventListener('change', () => changerStatut(p, sel.value, sel));
+
+      const pct = completude(p);
+      const logo = urlSure(p.logo_url);
+      return el('tr', {},
+        el('td', {}, logo ? el('img', { src: logo, alt: '', style: 'width:32px;height:32px;object-fit:contain' }) : null),
+        el('td', { text: p.numero_atelier || '' }),
+        el('td', { text: p.entite_nom || '' }),
+        el('td', { text: p.contact_nom || '' }),
+        el('td', { text: p.capacite_equipes || '' }),
+        el('td', {}, sel),
+        el('td', {}, el('span', { class: 'jauge', title: pct + ' pour cent' }, el('span', { style: 'width:' + pct + '%' })),
+          ' ', el('span', { class: 'hint', text: pct + '%' })),
+        el('td', {}, boutonsOpportunites(p)),
+        el('td', { style: 'white-space:nowrap' },
+          el('button', { text: 'Fiche', onclick: () => ouvrirFiche(p) }), ' ',
+          el('button', { class: 'secondary', text: 'Documents', onclick: () => showDocumentsModal('partenariat', p.id, p.entite_nom || '') })));
+    }
+
+    function afficher() {
+      const tbody = document.getElementById('partenariats-body');
+      tbody.textContent = '';
+      const liste = filtrer();
+      document.getElementById('compteur').textContent = '(' + liste.length + ' sur ' + partenariatsData.length + ')';
+      if (!liste.length) {
+        tbody.append(el('tr', {}, el('td', { colspan: '9', class: 'hint', text: partenariatsData.length ? 'Aucun résultat pour ce filtre.' : "Aucun partenaire pour l'instant." })));
+        return;
+      }
+      liste.forEach(p => tbody.append(ligne(p)));
+    }
+
+    async function loadPartenariats() {
+      const res = await apiGet('partenaires.list', { edition_id: editionActiveId });
+      partenariatsData = (res.success && res.data) ? res.data : [];
+      afficher();
+    }
+
+    // ---------- Fiche (compléter ou modifier) ----------
+    function champFiche(def, p) {
+      const [cle, libelle, type] = def;
+      let saisie;
+      if (type === 'a') saisie = el('textarea', { name: cle, rows: '3' });
+      else if (type === 'b') saisie = el('select', { name: cle }, el('option', { value: 'false', text: 'Non' }), el('option', { value: 'true', text: 'Oui' }));
+      else if (type === 's') saisie = el('select', { name: cle }, STATUTS.map(([v, l]) => el('option', { value: v, text: l })));
+      else saisie = el('input', { name: cle, type: type === 'e' ? 'email' : (type === 'n' ? 'text' : 'text') });
+      if (type === 'b') saisie.value = estVrai(p[cle]) ? 'true' : 'false';
+      else saisie.value = p[cle] === undefined || p[cle] === null ? '' : String(p[cle]);
+      return { zone: type === 'a', noeud: el('div', {}, el('label', { text: libelle }), saisie) };
+    }
+
+    function fermerFiche() { const o = document.getElementById('fiche-overlay'); if (o) o.remove(); }
+
+    function ouvrirFiche(p) {
+      fermerFiche();
+      const form = el('form', {});
+      FICHE.forEach(section => {
+        const det = el('details', { class: 'fiche-section', open: section.ouvert ? 'open' : false }, el('summary', { text: section.titre }));
+        const grille = el('div', { class: 'fiche-grid' });
+        const pleins = el('div', {});
+        section.champs.forEach(def => {
+          const c = champFiche(def, p);
+          if (c.zone) { c.noeud.className = 'fiche-full'; pleins.append(c.noeud); }
+          else grille.append(c.noeud);
+        });
+        det.append(grille, pleins);
+        form.append(det);
+      });
+      const msg = el('span', { class: 'hint' });
+      form.append(el('div', { style: 'display:flex;gap:8px;align-items:center;margin-top:12px' },
+        el('button', { type: 'submit', text: 'Enregistrer' }),
+        el('button', { type: 'button', class: 'secondary', text: 'Fermer', onclick: fermerFiche }), msg));
+
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const payload = Object.fromEntries(new FormData(form).entries());
+        payload.id = p.id;
+        msg.textContent = 'Enregistrement…';
+        const res = await apiPost('partenaires.update', payload);
+        if (res.success) { fermerFiche(); loadPartenariats(); }
+        else msg.textContent = 'Erreur : ' + res.error.message;
+      });
+
+      const overlay = el('div', { class: 'modal-overlay', id: 'fiche-overlay' },
+        el('div', { class: 'modal-box', style: 'max-width:760px' },
+          el('h3', { style: 'margin-top:0', text: p.entite_nom || 'Partenaire' }), form));
+      overlay.addEventListener('click', e => { if (e.target === overlay) fermerFiche(); });
+      document.body.append(overlay);
+    }
+
+    // ---------- Ajout rapide ----------
+    document.getElementById('form-ajout-rapide').addEventListener('submit', async e => {
       e.preventDefault();
       const payload = Object.fromEntries(new FormData(e.target).entries());
       payload.edition_id = editionActiveId;
+      payload.statut = 'a_solliciter';
       const res = await apiPost('partenaires.create', payload);
-      if (res.success) { e.target.reset(); loadPartenariats(); }
-      else alert('Erreur : ' + res.error.message);
+      if (!res.success) { alert('Erreur : ' + res.error.message); return; }
+      e.target.reset();
+      await loadPartenariats();
+      const cree = partenariatsData.find(p => p.id === res.data.id);
+      if (cree) ouvrirFiche(cree);
     });
+
+    // ---------- Synchronisation du formulaire Google ----------
+    document.getElementById('btn-sync').addEventListener('click', async () => {
+      const bouton = document.getElementById('btn-sync');
+      const msg = document.getElementById('sync-message');
+      bouton.disabled = true;
+      msg.textContent = 'Lecture du formulaire…';
+      const res = await apiPost('partenaires.synchroniserFormulaire', {});
+      bouton.disabled = false;
+      if (!res.success) { msg.textContent = 'Erreur : ' + res.error.message; return; }
+      const d = res.data;
+      msg.textContent = d.crees + ' nouveau(x) partenaire(s) créé(s), ' + d.ignores + ' déjà présent(s), sur ' + d.total + ' réponse(s).';
+      loadPartenariats();
+    });
+
+    // ---------- Import / export ----------
+    document.getElementById('btn-import-partenaires').addEventListener('click', () => {
+      showImportModal({
+        title: 'Partenaires et Ateliers',
+        action: 'partenaires.create',
+        fields: [
+          { key: 'nom_entite', label: 'Nom entite', required: true },
+          { key: 'contact_nom', label: 'Nom du contact referent' },
+          { key: 'contact_email', label: 'Adresse mail du contact referent' },
+          { key: 'presentation_texte', label: 'Courte description de votre entite' },
+          { key: 'autorite_a_inviter_nom', label: 'Autorite a inviter' },
+          { key: 'type_atelier', label: 'Type atelier' },
+          { key: 'descriptif_atelier', label: 'Courte description atelier' },
+          { key: 'capacite_equipes', label: 'Combien equipes' },
+          { key: 'venue_avec_barnum', label: 'Venez-vous avec un barnum' },
+          { key: 'nb_tables', label: 'Besoin en tables' },
+          { key: 'nb_chaises', label: 'Besoin en chaises' },
+          { key: 'electricite_necessaire', label: 'Besoin electricite' },
+          { key: 'contraintes_emplacement', label: 'Avez-vous des besoins particuliers' },
+          { key: 'finance_aussi', label: 'Avez-vous la possibilité de financer' },
+          { key: 'fournit_goodies', label: 'Pouvez-vous fournir des lots ou goodies' },
+          { key: 'contact_communication', label: 'Avez-vous un service communication' },
+          { key: 'contact_presse', label: 'Relations privilégiées avec la presse' },
+          { key: 'defis_proposes', label: 'Si oui, quels seraient les défis' },
+          { key: 'notes', label: 'Précisions ou commentaires' }
+        ],
+        defaults: { edition_id: editionActiveId },
+        onDone: loadPartenariats
+      });
+    });
+    document.getElementById('btn-export').addEventListener('click', () => exportCSV('partenaires', partenariatsData));
+
+    ['filtre-texte', 'filtre-statut', 'filtre-incomplet'].forEach(id =>
+      document.getElementById(id).addEventListener('input', afficher));
 
     init();
   </script>

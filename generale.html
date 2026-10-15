@@ -74,6 +74,11 @@
       <details>
         <summary>Calendrier</summary>
         <p class="section-hint">Échéances-types calculées par rapport à la date de l'événement - modifiables ci-dessous, une fois pour toutes les éditions.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <button class="secondary" id="btn-frise-png">Frise en image (PNG)</button>
+          <button class="secondary" id="btn-frise-xlsx">Frise en Excel</button>
+        </div>
+        <div id="frise-conteneur" style="border:1px solid var(--border);border-radius:8px;margin-bottom:16px;padding:8px"></div>
         <table>
           <thead><tr><th>Échéance</th><th>Date</th><th></th></tr></thead>
           <tbody id="calendrier-body"><tr><td colspan="3" class="hint">Chargement…</td></tr></tbody>
@@ -130,11 +135,23 @@
   </main>
 
   <script src="assets/app.js"></script>
+  <script src="assets/frise.js"></script>
   <script>
     requireAuth();
     renderTopbar('generale.html');
 
     let editionsData = [];
+
+    let friseJalons = [], friseDate = '', friseTitre = 'Calendrier';
+    document.getElementById('btn-frise-png').addEventListener('click', () => {
+      if (!friseJalons.length) { alert("Renseignez d'abord la date de l'événement."); return; }
+      Frise.exporterPng(friseJalons, friseDate, friseTitre, 'frise-rallye-citoyen.png');
+    });
+    document.getElementById('btn-frise-xlsx').addEventListener('click', async () => {
+      if (!friseJalons.length) { alert("Renseignez d'abord la date de l'événement."); return; }
+      try { await Frise.exporterExcel(friseJalons, friseDate, 'frise-rallye-citoyen.xlsx'); }
+      catch (err) { alert('Erreur : ' + err.message); }
+    });
 
     async function loadVision() {
       const res = await apiGet('generale.vision');
@@ -178,6 +195,11 @@
         resteEl.innerHTML = '<ul style="margin:0;padding-left:20px">' +
           d.resteAFaire.map(item => `<li style="margin-bottom:6px">${item}</li>`).join('') + '</ul>';
       }
+
+      friseJalons = d.calendrier || [];
+      friseDate = d.edition ? d.edition.date_evenement : '';
+      friseTitre = d.edition ? 'Rallye Citoyen ' + d.edition.annee + ' - calendrier' : 'Calendrier';
+      Frise.afficher(document.getElementById('frise-conteneur'), friseJalons, friseDate, friseTitre);
 
       const calBody = document.getElementById('calendrier-body');
       if (!d.calendrier || !d.calendrier.length) {
