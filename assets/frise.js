@@ -1,11 +1,10 @@
 /**
  * frise.js
  * Frise chronologique du calendrier : dessin SVG, export image (PNG) et
- * export Excel. Les jalons sont espacés régulièrement (frise "ordinale") :
- * c'est lisible même quand deux échéances sont à quelques jours d'écart, et
- * les étiquettes alternent sur deux hauteurs de chaque côté de l'axe, donc
- * jamais de chevauchement. Le trait "aujourd'hui" est placé au prorata des
- * dates entre les deux jalons qui l'encadrent.
+ * export Excel. L'axe est à l'échelle du temps, avec une bande par mois, et
+ * chaque jalon est placé à sa vraie date. Les étiquettes sont espacées pour
+ * ne pas se chevaucher et reliées à leur date par un trait. Le repère
+ * "aujourd'hui" est placé à sa vraie position.
  */
 (function (global) {
   const MOIS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
@@ -46,9 +45,13 @@
     return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  const JOUR = 86400000;
+
   /**
    * Calcule la géométrie (sans toucher au DOM, donc testable).
-   * jalons : [{label, date 'yyyy-MM-dd'}] ; dateEvenement : 'yyyy-MM-dd'.
+   * L'axe est à l'échelle du temps : une bande par mois, les jalons sont
+   * placés à leur vraie date. Les étiquettes sont espacées pour ne jamais se
+   * chevaucher et reliées à leur date par un trait.
    */
   function calculerFrise(jalons, dateEvenement, aujourdhui) {
     const points = (jalons || [])
@@ -59,74 +62,101 @@
     }
     points.sort((a, b) => parseIso(a.date) - parseIso(b.date) || (a.jourJ ? 1 : 0) - (b.jourJ ? 1 : 0));
 
-    const pas = 120, marge = 90, hauteurNiveau = [46, 120], largeurTexte = 26;
+    const marge = 110, bande = 30, base = 40;
     const n = points.length;
-    const largeur = Math.max(900, marge * 2 + Math.max(0, n - 1) * pas);
-    const axeY = 215;
-    const hauteur = axeY * 2;
-    const reste = (largeur - marge * 2) / Math.max(1, n - 1);
+    if (!n) return { points: [], mois: [], largeur: 900, hauteur: 200, axeY: 100, bande: bande, xAujourdhui: null, jourParPx: 1 };
 
-    points.forEach((p, i) => {
-      p.x = n === 1 ? largeur / 2 : marge + i * reste;
-      p.cote = i % 2 === 0 ? -1 : 1;                 // -1 au-dessus, 1 en dessous
-      p.niveau = Math.floor(i / 2) % 2;               // deux hauteurs par côté
-      p.y = axeY + p.cote * hauteurNiveau[p.niveau];
-      p.lignes = decouper(p.label, largeurTexte);
+    const premier = new Date(parseIso(points[0].date)), dernier = new Date(parseIso(points[n - 1].date));
+    const debut = Date.UTC(premier.getUTCFullYear(), premier.getUTCMonth(), 1);
+    const fin = Date.UTC(dernier.getUTCFullYear(), dernier.getUTCMonth() + 1, 1);
+    const nbMois = Math.round((fin - debut) / (30.44 * JOUR));
+    const ecartEtiquettes = 176;
+    const parCote = Math.ceil(n / 2);
+    const largeurAxe = Math.min(2600, Math.max(900, nbMois * 120, (parCote - 1) * ecartEtiquettes + 40));
+    const largeur = largeurAxe + marge * 2;
+    const xDe = t => marge + (t - debut) / (fin - debut) * largeurAxe;
+
+    const mois = [];
+    let a = premier.getUTCFullYear(), m = premier.getUTCMonth();
+    while (Date.UTC(a, m, 1) < fin) {
+      const d0 = Date.UTC(a, m, 1), d1 = Date.UTC(m === 11 ? a + 1 : a, (m + 1) % 12, 1);
+      mois.push({ annee: a, mois: m, x0: xDe(d0), x1: xDe(d1) });
+      m++; if (m > 11) { m = 0; a++; }
+    }
+
+    points.forEach(p => {
+      p.x = xDe(parseIso(p.date));
+      p.lignes = decouper(p.label, 26);
+          });
+
+    // Une rangée d'étiquettes par côté, dans l'ordre des dates, alternées
+    // au-dessus et au-dessous. Chaque étiquette reste au plus près de sa date
+    // (décalage minimal pour respecter l'écart), reliée à son point par un trait.
+    // Même ordre en haut et en bas : les traits ne se croisent jamais.
+    points.forEach((p, i) => { p.cote = i % 2 === 0 ? -1 : 1; });
+    [-1, 1].forEach(cote => {
+      const lst = points.filter(p => p.cote === cote);
+      const min = marge - 30, max = largeur - marge + 30;
+      lst.forEach((p, i) => { p.lx = Math.max(p.x, i ? lst[i - 1].lx + ecartEtiquettes : min); });
+      for (let i = lst.length - 1; i >= 0; i--) {
+        const borne = i === lst.length - 1 ? max : lst[i + 1].lx - ecartEtiquettes;
+        if (lst[i].lx > borne) lst[i].lx = borne;
+      }
     });
 
-    // Position du repère "aujourd'hui", interpolée entre deux jalons voisins.
+    const axeY = 50 + base + 70;
+    const hauteur = axeY + bande / 2 + base + 70 + 10;
+    points.forEach(p => { p.y = axeY + p.cote * (bande / 2 + base); });
+
     const tj = parseIso(aujourdhui || aujourdhuiIso());
-    let xAujourdhui = null;
-    if (n >= 2 && tj !== null) {
-      const t0 = parseIso(points[0].date), t1 = parseIso(points[n - 1].date);
-      if (tj >= t0 && tj <= t1) {
-        for (let i = 0; i < n - 1; i++) {
-          const a = parseIso(points[i].date), b = parseIso(points[i + 1].date);
-          if (tj >= a && tj <= b) {
-            const f = b === a ? 0 : (tj - a) / (b - a);
-            xAujourdhui = points[i].x + f * (points[i + 1].x - points[i].x);
-            break;
-          }
-        }
-      }
-    }
-    return { points, largeur, hauteur, axeY, xAujourdhui, hauteurNiveau };
+    const xAujourdhui = (tj !== null && tj >= debut && tj <= fin) ? xDe(tj) : null;
+    return { points, mois, largeur, hauteur, axeY, bande, xAujourdhui };
   }
 
   function construireSvg(jalons, dateEvenement, titre, aujourdhui) {
     const g = calculerFrise(jalons, dateEvenement, aujourdhui);
     const tj = parseIso(aujourdhui || aujourdhuiIso());
-    const haut = 60;
-    const H = g.hauteur + haut;
+    const tE = parseIso(dateEvenement);
+    const H = g.hauteur;
     const o = [];
     o.push('<svg xmlns="http://www.w3.org/2000/svg" width="' + g.largeur + '" height="' + H + '" viewBox="0 0 ' + g.largeur + ' ' + H + '" font-family="Segoe UI, Roboto, Arial, sans-serif">');
     o.push('<rect width="100%" height="100%" fill="#ffffff"/>');
-    o.push('<text x="' + (g.largeur / 2) + '" y="34" text-anchor="middle" font-size="22" font-weight="700" fill="#0d1b2a">' + echapper(titre || 'Calendrier') + '</text>');
-    o.push('<g transform="translate(0,' + haut + ')">');
-    o.push('<line x1="30" y1="' + g.axeY + '" x2="' + (g.largeur - 30) + '" y2="' + g.axeY + '" stroke="#0d1b2a" stroke-width="3" stroke-linecap="round"/>');
+    o.push('<text x="' + (g.largeur / 2) + '" y="32" text-anchor="middle" font-size="22" font-weight="700" fill="#0d1b2a">' + echapper(titre || 'Calendrier') + '</text>');
+
+    const top = g.axeY - g.bande / 2;
+    // Repère "aujourd'hui" en arrière-plan.
+    if (g.xAujourdhui !== null) {
+      const x = g.xAujourdhui;
+      o.push('<line x1="' + x + '" y1="52" x2="' + x + '" y2="' + (H - 10) + '" stroke="#a4243b" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.55"/>');
+      o.push('<text x="' + x + '" y="48" text-anchor="middle" font-size="11" font-weight="700" fill="#a4243b">Aujourd\'hui</text>');
+    }
+    // Bande des mois (échelle du temps).
+    g.mois.forEach((mo, i) => {
+      const fond = i % 2 === 0 ? '#e9edf3' : '#f6f7fa';
+      o.push('<rect x="' + mo.x0 + '" y="' + top + '" width="' + (mo.x1 - mo.x0) + '" height="' + g.bande + '" fill="' + fond + '" stroke="#c5ccd6" stroke-width="1"/>');
+      const avecAnnee = i === 0 || mo.mois === 0;
+      o.push('<text x="' + ((mo.x0 + mo.x1) / 2) + '" y="' + (g.axeY + 4) + '" text-anchor="middle" font-size="11" fill="#475467" font-weight="' + (mo.mois === 0 ? '700' : '500') + '">' + MOIS[mo.mois].replace('.', '') + (avecAnnee ? ' ' + mo.annee : '') + '</text>');
+    });
 
     g.points.forEach(p => {
       const passe = tj !== null && parseIso(p.date) < tj;
       const couleur = p.jourJ ? '#c9a227' : (passe ? '#98a2b3' : '#0d1b2a');
-      const bout = p.y;
-      o.push('<line x1="' + p.x + '" y1="' + g.axeY + '" x2="' + p.x + '" y2="' + bout + '" stroke="' + couleur + '" stroke-width="1.5"/>');
-      o.push('<circle cx="' + p.x + '" cy="' + g.axeY + '" r="' + (p.jourJ ? 9 : 6) + '" fill="' + couleur + '" stroke="#ffffff" stroke-width="2"/>');
-      // Bloc de texte : date en gras puis libellé, ancré côté extérieur du trait.
-      const nbl = p.lignes.length + 1;
-      const interligne = 14;
-      const debut = p.cote === -1 ? bout - 8 - (nbl - 1) * interligne : bout + 16;
-      o.push('<text x="' + p.x + '" y="' + debut + '" text-anchor="middle" font-size="12" font-weight="700" fill="' + couleur + '">' + echapper(dateCourte(p.date)) + '</text>');
+      const dep = p.cote === -1 ? top : top + g.bande;
+      o.push('<line x1="' + p.x + '" y1="' + dep + '" x2="' + p.lx + '" y2="' + p.y + '" stroke="' + couleur + '" stroke-width="1.5"/>');
+      o.push('<circle cx="' + p.x + '" cy="' + dep + '" r="' + (p.jourJ ? 6 : 4.5) + '" fill="' + couleur + '" stroke="#ffffff" stroke-width="1.5"/>');
+      let ecart = '';
+      if (tE !== null) {
+        const j = Math.round((tE - parseIso(p.date)) / JOUR);
+        ecart = p.jourJ || j === 0 ? '' : (j > 0 ? '  (J-' + j + ')' : '  (J+' + Math.abs(j) + ')');
+      }
+      const nbl = p.lignes.length + 1, interligne = 14;
+      const debutY = p.cote === -1 ? p.y - 8 - (nbl - 1) * interligne : p.y + 16;
+      o.push('<text x="' + p.lx + '" y="' + debutY + '" text-anchor="middle" font-size="12" font-weight="700" fill="' + couleur + '">' + echapper(dateCourte(p.date) + ecart) + '</text>');
       p.lignes.forEach((l, k) => {
-        o.push('<text x="' + p.x + '" y="' + (debut + (k + 1) * interligne) + '" text-anchor="middle" font-size="12" fill="' + (passe ? '#667085' : '#1b1f24') + '">' + echapper(l) + '</text>');
+        o.push('<text x="' + p.lx + '" y="' + (debutY + (k + 1) * interligne) + '" text-anchor="middle" font-size="12" fill="' + (passe ? '#667085' : '#1b1f24') + '">' + echapper(l) + '</text>');
       });
     });
-
-    if (g.xAujourdhui !== null) {
-      const x = g.xAujourdhui;
-      o.push('<line x1="' + x + '" y1="' + (g.axeY - 24) + '" x2="' + x + '" y2="' + (g.axeY + 24) + '" stroke="#a4243b" stroke-width="2" stroke-dasharray="4 3"/>');
-      o.push('<text x="' + x + '" y="' + (g.axeY + 40) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#a4243b">Aujourd\'hui</text>');
-    }
-    o.push('</g></svg>');
+    o.push('</svg>');
     return o.join('');
   }
 
