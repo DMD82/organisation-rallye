@@ -437,7 +437,7 @@ async function chargerAFaire() {
         ligne: it => ({ titre: signe(it.joursAvant) + '  ' + it.label, detail: labelNiveau(it.niveau) + ' - observé : ' + it.preuve }),
         ajouter: async it => {
           const res = await apiPost('generale.jalons.create', { jours_avant: it.joursAvant, label: it.label, categorie: it.niveau });
-          return !!res.success;
+          return (res.success ? true : ((res.error && res.error.message) || 'Erreur inconnue'));
         },
         onDone: loadVision
       });

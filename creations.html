@@ -246,7 +246,7 @@
         items: H.CREATIONS_TYPES,
         deja: it => noms.indexOf(H.norm(it.nom)) >= 0,
         ligne: it => ({ titre: signe(it.joursAvant) + '  ' + it.nom, detail: labelCat(it.categorie) + ' - ' + it.usage + ' (' + it.preuve + ')' }),
-        ajouter: async it => (await apiPost('creations.create', { edition_id: voirId, nom: it.nom, categorie: it.categorie, usage: it.usage, jours_avant: it.joursAvant })).success,
+        ajouter: async it => { const res = await apiPost('creations.create', { edition_id: voirId, nom: it.nom, categorie: it.categorie, usage: it.usage, jours_avant: it.joursAvant }); return (res.success ? true : ((res.error && res.error.message) || 'Erreur inconnue')); },
         onDone: charger
       });
     });

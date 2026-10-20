@@ -317,7 +317,7 @@
         ligne: it => ({ titre: it.titre, detail: it.categorie.replace(/_/g, ' ') + ' - ' + it.objet }),
         ajouter: async it => {
           const res = await apiPost('communication.modeles.create', { titre: it.titre, categorie: it.categorie, objet: it.objet, corps: it.corps, notes: it.notes });
-          return !!res.success;
+          return (res.success ? true : ((res.error && res.error.message) || 'Erreur inconnue'));
         },
         onDone: loadModeles
       });
