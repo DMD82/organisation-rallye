@@ -40,6 +40,8 @@
     { joursAvant: 54, label: 'Note de service (NDS)', niveau: 'logistique', preuve: '2026 : J-54 à J-47' },
     { joursAvant: 51, label: 'Attestation d\'assurance', niveau: 'logistique', preuve: '2025 : J-77 à J-50, 2026 : J-51' },
     { joursAvant: 45, label: 'Poste de secours (DPS) : devis et validation', niveau: 'logistique', preuve: '2025 : J-67 à J-28, 2026 : J-43' },
+    { joursAvant: 45, label: 'Commande de la bâche partenaires en imprimerie', niveau: 'creations', preuve: '2024 : J-43 ; 2026 : J-13 (trop juste)' },
+    { joursAvant: 28, label: 'Livraison attendue des impressions en imprimerie', niveau: 'creations', preuve: '2024 : livraisons J-29 à J-23' },
     { joursAvant: 40, label: 'Réunion armées et corps en uniforme', niveau: 'partenaires', preuve: '2025 : J-42 à J-21, 2026 : J-77 à J-32' },
     { joursAvant: 40, label: 'Convention de mise à disposition (armées)', niveau: 'logistique', preuve: '2025 : J-34, 2026 : J-40' },
     { joursAvant: 35, label: 'Premier contact presse', niveau: 'communication', preuve: '2025 : J-35' },
@@ -54,6 +56,19 @@
     { joursAvant: 14, label: 'Plan de répartition des ateliers envoyé aux partenaires', niveau: 'partenaires', preuve: '2025 : J-9, 2026 : J-14' },
     { joursAvant: 6, label: 'Impressions (livret, plans, panneaux)', niveau: 'creations', preuve: '2026 : J-6 à J+126' },
     { joursAvant: 5, label: 'Protocole : ordre de passage des autorités', niveau: 'autorites', preuve: '2026 : J-5' },
+    { joursAvant: 204, label: 'Défi complémentaire pour les classes de défense', niveau: 'partenaires', preuve: '2025 : J-209, 2026 : J-204' },
+    { joursAvant: 78, label: 'Rappel du fil rouge annuel aux établissements', niveau: 'communication', preuve: '2026 : J-78' },
+    { joursAvant: 19, label: 'Fil rouge du jour : questions diffusées', niveau: 'partenaires', preuve: '2026 : J-19, relance J-13' },
+    { joursAvant: 7, label: 'Dernières annulations de partenaires : mise à jour des plans', niveau: 'logistique', preuve: '2026 : désistements J-13 à J-7' },
+    { joursAvant: 1, label: 'Résultats du fil rouge annuel (collecte et classement)', niveau: 'cle', preuve: '2026 : J-1' },
+    { joursAvant: 203, label: 'Formulaire d\'informations partenaires : mise en ligne', niveau: 'partenaires', preuve: '2026 : message du 21/10/2025 (J-203)' },
+    { joursAvant: 180, label: 'Formulaire d\'inscription des établissements : mise en ligne', niveau: 'cle', preuve: '2025 : J-175, 2026 : J-180' },
+    { joursAvant: 14, label: 'Test du site de notation par les partenaires', niveau: 'logistique', preuve: 'Message J-7 de 2026 (tests avant le jour J)' },
+    { joursAvant: 14, label: 'Formulaire de commande du foodtruck', niveau: 'logistique', preuve: '2025 : J-9, 2026 : J-13' },
+    { joursAvant: 3, label: 'Envoi des impressions au secrétariat', niveau: 'creations', preuve: '2026 : J-3 (fil rouge), complément J-1' },
+    { joursAvant: 1, label: 'Impressions complémentaires (listes, QR codes, plans)', niveau: 'creations', preuve: '2026 : J-1' },
+    { joursAvant: 0, label: 'Dernières impressions de listes à jour (5h30)', niveau: 'creations', preuve: '2026 : annulations et changements d\'équipes le jour même' },
+    { joursAvant: -1, label: 'Envoi du questionnaire RETEX', niveau: 'cle', preuve: '2026 : réponses attendues avant J+9' },
     { joursAvant: -1, label: 'Remerciements aux partenaires et aux participants', niveau: 'cle', preuve: '2025 : J+1, 2026 : J+1' },
     { joursAvant: -3, label: 'Diffusion des photos', niveau: 'communication', preuve: '2026 : J+1 à J+3' },
     { joursAvant: -8, label: 'Carton d\'invitation de la soirée des partenaires', niveau: 'creations', preuve: '2026 : J+8' },
@@ -109,12 +124,29 @@
     { nom: 'Livret ou carnet participant', categorie: 'imprimes', joursAvant: 32, usage: 'Diffusé aux établissements avant les vacances. Les descriptions d\'ateliers sont attendues environ une semaine avant.', preuve: '2026 : infos J-35 à J-29, diffusion J-32' },
     { nom: 'Dossier de presse', categorie: 'dossiers', joursAvant: 19, usage: 'Remis aux médias invités le jour J.', preuve: '2026 : J-19 à J-13' },
     { nom: 'Affiche partenaires', categorie: 'imprimes', joursAvant: 15, usage: 'Valorisation des partenaires, version image puis PDF.', preuve: '2026 : J-15 (PNG), J-6 (PDF)' },
-    { nom: 'Bâche partenaires', categorie: 'signaletique', joursAvant: 21, usage: 'Valorisation des partenaires sur le site. En 2026, commande passée à J-13 : prévoir plus tôt.', preuve: '2026 : J-13' },
+    { nom: 'Bâche partenaires', categorie: 'signaletique', joursAvant: 45, usage: 'Grande bâche de valorisation des partenaires, fabriquée en imprimerie. Prévoir la validation du bon à tirer, environ 2 semaines de fabrication et le transport jusqu\'au site.', preuve: '2024 : commande J-43, livrée J-29 à J-23 ; 2026 : commande J-13 (fichier remplacé après commande)' },
+    { nom: 'Impressions en imprimerie (grands formats)', categorie: 'imprimes', joursAvant: 28, usage: 'Affiches et supports grands formats à faire hors DMD. L\'imprimeur consulté en 2024 allait jusqu\'à A0 (jet d\'encre, laser jusqu\'à A3).', preuve: '2024 : échanges J-28 et J-24' },
     { nom: 'Plan de répartition des ateliers', categorie: 'imprimes', joursAvant: 14, usage: 'Envoyé aux partenaires, imprimé pour l\'accueil.', preuve: '2025 : J-9, 2026 : J-14' },
     { nom: 'Panneaux d\'atelier', categorie: 'signaletique', joursAvant: 14, usage: 'Remis à chaque partenaire à l\'accueil le jour J (estimation du délai).', preuve: 'Mentionné dans le message de mars 2026' },
     { nom: 'Tours de cou numérotés (chefs d\'équipe)', categorie: 'signaletique', joursAvant: 21, usage: 'Identification des chefs d\'équipe (estimation du délai).', preuve: 'Mentionné dans les consignes 2025' },
     { nom: 'Questionnaires de notation en ligne', categorie: 'numerique', joursAvant: 14, usage: 'Les partenaires doivent les tester avant le J-7 (estimation du délai).', preuve: 'Message J-7 de 2026' },
     { nom: 'Consignes aux participants', categorie: 'imprimes', joursAvant: 7, usage: 'Envoyées aux établissements juste avant l\'événement.', preuve: '2026 : J-7' },
+    { nom: 'Fil rouge du jour : questions', categorie: 'dossiers', joursAvant: 19, usage: 'Questions du fil rouge posées aux équipes le jour J ; diffusées environ trois semaines avant, puis imprimées.', preuve: '2026 : J-19 et J-13' },
+    { nom: 'Fil rouge annuel : défis et résultats', categorie: 'dossiers', joursAvant: 221, usage: 'Défis proposés aux classes pendant l\'année, collecte des résultats pour le classement la veille du jour J.', preuve: '2026 : lancement J-221, résultats J-1' },
+    { nom: 'Site de notation en ligne', categorie: 'numerique', joursAvant: 21, usage: 'Site et questionnaires de notation utilisés par les partenaires le jour J. À tester avant le J-7.', preuve: '2026 : tests demandés aux partenaires' },
+    { nom: 'Site des défis annuels', categorie: 'numerique', joursAvant: 221, usage: 'Site présentant les défis que les élèves réalisent pendant l\'année pour gagner des points.', preuve: '2026 : défis lancés avec le fil rouge (J-221)' },
+    { nom: 'Formulaire d\'inscription des établissements', categorie: 'numerique', joursAvant: 180, usage: 'Diffusé à tous les collèges et lycées du département ; clôture environ 7 semaines avant.', preuve: '2025 : J-175, 2026 : J-180' },
+    { nom: 'Formulaire d\'informations partenaires', categorie: 'numerique', joursAvant: 203, usage: 'Recueille présentation, atelier, besoins et logistique de chaque partenaire (alimente la base Partenaires).', preuve: '2026 : envoyé dès J-203, relancé jusqu\'à J-35' },
+    { nom: 'Formulaire de commande du foodtruck', categorie: 'numerique', joursAvant: 14, usage: 'Commande anticipée des repas par les partenaires.', preuve: '2025 : J-9, 2026 : J-13' },
+    { nom: 'Formulaire RETEX', categorie: 'numerique', joursAvant: -1, usage: 'Questionnaire avant / pendant / après / libre, envoyé aux partenaires et aux établissements.', preuve: '2026 : réponses avant J+9' },
+    { nom: 'Impression : répartition des tables', categorie: 'imprimes', joursAvant: 1, usage: 'A3 x1, plastifié. Placement des équipes aux tables.', preuve: '2026 : demande du 11/05' },
+    { nom: 'Impression : QR codes de notation', categorie: 'imprimes', joursAvant: 1, usage: 'A4 x4. Accès au site de notation pour les partenaires.', preuve: '2026 : demande du 11/05' },
+    { nom: 'Impression : remise des prix', categorie: 'imprimes', joursAvant: 1, usage: 'A4 paysage x2. Classements pour la remise des prix.', preuve: '2026 : demande du 11/05' },
+    { nom: 'Impression : premier atelier des équipes', categorie: 'imprimes', joursAvant: 1, usage: '1er atelier par équipe (8 feuilles) et 1re équipe par atelier (3 feuilles), en A3 ou A4 paysage. À réimprimer si des équipes changent.', preuve: '2026 : demande du 11/05' },
+    { nom: 'Impression : fil rouge (questions)', categorie: 'imprimes', joursAvant: 3, usage: 'Questions du fil rouge, envoyées au secrétariat avec les autres impressions.', preuve: '2026 : envoi du 08/05' },
+    { nom: 'Impression : affiches partenaires', categorie: 'imprimes', joursAvant: 6, usage: 'Nombre d\'exemplaires à fixer avec le secrétariat.', preuve: '2026 : question du 06/05' },
+    { nom: 'Impression : carnets participants A5', categorie: 'imprimes', joursAvant: 20, usage: 'Essais d\'impression en A5 à faire en avance.', preuve: '2026 : essais annoncés le 06/05' },
+    { nom: 'Livre d\'or', categorie: 'imprimes', joursAvant: 1, usage: 'Imprimé pour le jour J.', preuve: '2026 : dossier Impressions' },
     { nom: 'Carton d\'invitation de la soirée des partenaires', categorie: 'imprimes', joursAvant: -8, usage: 'Joint à l\'invitation à la soirée des partenaires (envoyée vers J+15).', preuve: '2026 : J+8' }
   ];
 
@@ -377,6 +409,9 @@
     overlay.appendChild(box);
     document.body.appendChild(overlay);
   }
+
+  JALONS_TYPES.sort(function (a, b) { return b.joursAvant - a.joursAvant; });
+  CREATIONS_TYPES.sort(function (a, b) { return b.joursAvant - a.joursAvant; });
 
   global.Historique = {
     JALONS_TYPES: JALONS_TYPES,
