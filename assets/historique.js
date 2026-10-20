@@ -391,18 +391,21 @@
       var choisis = cases.filter(function (c) { return c.cb.checked && !c.cb.disabled; });
       if (!choisis.length) { msg.textContent = 'Rien de sélectionné.'; return; }
       ajouter.disabled = true;
-      var faits = 0, i = 0;
+      var faits = 0, i = 0, erreur = '';
       (function suite() {
         if (i >= choisis.length) {
-          msg.textContent = faits + ' élément(s) ajouté(s) sur ' + choisis.length + '.';
+          msg.textContent = faits + ' élément(s) ajouté(s) sur ' + choisis.length + '.' +
+            (erreur ? ' Première erreur : ' + erreur : '');
+          ajouter.disabled = false;
           if (config.onDone) config.onDone();
           return;
         }
         msg.textContent = 'Ajout ' + (i + 1) + ' / ' + choisis.length + '...';
         config.ajouter(choisis[i].item).then(function (ok) {
-          if (ok) { faits++; choisis[i].cb.checked = false; choisis[i].cb.disabled = true; }
+          if (ok === true) { faits++; choisis[i].cb.checked = false; choisis[i].cb.disabled = true; }
+          else if (!erreur) erreur = typeof ok === 'string' ? ok : 'Réponse inattendue du serveur.';
           i++; suite();
-        });
+        }).catch(function (e) { if (!erreur) erreur = e.message || String(e); i++; suite(); });
       })();
     });
     box.appendChild(el('div', { style: 'display:flex;gap:12px;align-items:center;margin-top:8px' }, ajouter, msg));
