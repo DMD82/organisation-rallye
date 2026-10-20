@@ -40,6 +40,13 @@
       <div id="reste-a-faire"><div class="hint">Chargement…</div></div>
     </div>
 
+    <!-- Prochaines étapes : échéances et créations à finir -->
+    <div class="card">
+      <h3 style="margin-top:0">Prochaines étapes</h3>
+      <p class="section-hint" style="margin-top:0">Échéances des 45 prochains jours et créations pas encore validées. Les retards apparaissent en premier.</p>
+      <div id="a-faire-liste"><div class="hint">Chargement…</div></div>
+    </div>
+
     <!-- Détails partenaires/équipes -->
     <div class="card">
       <details>
@@ -149,8 +156,21 @@
     let friseJalons = [], friseDate = '', friseTitre = 'Calendrier', friseNiveau = 'toutes';
     const NIV = window.Historique.NIVEAUX;
     const labelNiveau = id => (NIV.find(n => n.id === id) || { label: 'Toutes les échéances' }).label;
+    let creationsEdition = [];
+    function creationsFrise() {
+      if (!friseDate) return [];
+      const evt = new Date(friseDate.slice(0, 10) + 'T00:00:00Z').getTime();
+      const aujourdhui = new Date().toISOString().slice(0, 10);
+      const deja = friseJalons.map(j => window.Historique.norm(j.label));
+      return creationsEdition.filter(c => c.jours_avant !== '' && c.jours_avant !== undefined && deja.indexOf(window.Historique.norm(c.nom)) < 0).map(c => {
+        const date = new Date(evt - Number(c.jours_avant) * 86400000).toISOString().slice(0, 10);
+        return { id: c.id, label: c.nom, date: date, jours_avant: Number(c.jours_avant), categorie: 'creations', passe: date < aujourdhui };
+      });
+    }
     function jalonsVue() {
-      return friseNiveau === 'toutes' ? friseJalons : friseJalons.filter(j => j.categorie === friseNiveau);
+      if (friseNiveau === 'toutes') return friseJalons;
+      const l = friseJalons.filter(j => j.categorie === friseNiveau);
+      return friseNiveau === 'creations' ? l.concat(creationsFrise()).sort((a, b) => b.jours_avant - a.jours_avant) : l;
     }
     function titreVue() { return friseNiveau === 'toutes' ? friseTitre : friseTitre + ' - ' + labelNiveau(friseNiveau); }
     function nomFichier(ext) { return 'frise-rallye-citoyen' + (friseNiveau === 'toutes' ? '' : '-' + friseNiveau) + '.' + ext; }
@@ -224,6 +244,49 @@
       afficherFrise();
 
       renderCalendrier();
+      chargerAFaire();
+    }
+
+async function chargerAFaire() {
+      const zone = document.getElementById('a-faire-liste');
+      zone.textContent = '';
+      const edRes = await apiGet('generale.editions.active');
+      let crees = [];
+      if (edRes.success && edRes.data) {
+        const r = await apiGet('creations.list', { edition_id: edRes.data.id });
+        crees = r.success ? r.data : [];
+      }
+      creationsEdition = crees;
+      afficherFrise();
+      if (!friseDate) { zone.append(Object.assign(document.createElement('div'), { className: 'hint', textContent: "Renseignez la date de l'événement pour voir les prochaines étapes." })); return; }
+      const evt = new Date(friseDate.slice(0, 10) + 'T00:00:00Z').getTime();
+      const auj = new Date().toISOString().slice(0, 10);
+      const iso = j => new Date(evt - Number(j) * 86400000).toISOString().slice(0, 10);
+      const dans = d => Math.round((new Date(d + 'T00:00:00Z').getTime() - new Date(auj + 'T00:00:00Z').getTime()) / 86400000);
+      const items = [];
+      friseJalons.forEach(j => { const n = dans(j.date); if (n >= 0 && n <= 45) items.push({ date: j.date, n: n, type: 'Échéance', label: j.label, href: '#calendrier-body' }); });
+      crees.forEach(c => {
+        if (c.jours_avant === '' || c.statut === 'valide' || c.statut === 'livre') return;
+        const d = iso(c.jours_avant), n = dans(d);
+        if (n <= 45) items.push({ date: d, n: n, type: 'Création', label: c.nom, href: 'creations.html', statut: c.statut });
+      });
+      items.sort((a, b) => a.n - b.n);
+      if (!items.length) { zone.append(Object.assign(document.createElement('div'), { className: 'hint', textContent: 'Rien de prévu dans les 45 prochains jours.' })); return; }
+      const table = document.createElement('table');
+      const tb = document.createElement('tbody');
+      items.slice(0, 20).forEach(it => {
+        const tr = document.createElement('tr');
+        const td = t => { const c = document.createElement('td'); if (t instanceof Node) c.append(t); else c.textContent = t; return c; };
+        const quand = it.n < 0 ? 'En retard de ' + (-it.n) + ' j' : (it.n === 0 ? "Aujourd'hui" : 'Dans ' + it.n + ' j');
+        const q = td(quand + ' (' + it.date.split('-').reverse().join('/') + ')');
+        if (it.n < 0) q.style.color = 'var(--danger)';
+        const lien = document.createElement('a'); lien.href = it.href; lien.textContent = it.label;
+        tr.append(q, td(it.type), td(lien));
+        tb.append(tr);
+      });
+      table.append(tb);
+      zone.append(table);
+      if (items.length > 20) zone.append(Object.assign(document.createElement('div'), { className: 'hint', textContent: '+ ' + (items.length - 20) + ' autre(s) à venir.' }));
     }
 
     function joursEntre(dateIso, jourJIso) {
