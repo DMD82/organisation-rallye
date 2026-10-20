@@ -98,6 +98,7 @@ const NAV_PAGES = [
   { href: 'logistique.html', label: 'Logistique' },
   { href: 'budget.html', label: 'Budget et Mécènes' },
   { href: 'communication.html', label: 'Communication et Presse' },
+  { href: 'creations.html', label: 'Créations' },
   { href: 'reunions.html', label: 'Réunions' },
   { href: 'presentations.html', label: 'Présentations' },
   { href: 'contenu-pedagogique.html', label: 'Contenu pédagogique' },
