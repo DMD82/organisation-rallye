@@ -63,7 +63,10 @@
       </div>
 
       <div class="card">
-        <h3>Modèles</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <h3 style="margin:0">Modèles</h3>
+          <button class="secondary" id="btn-modeles-types" title="Textes repris des envois 2025 et 2026">Ajouter des modèles types</button>
+        </div>
         <div id="modeles-list"><div class="hint">Chargement…</div></div>
       </div>
     </section>
@@ -167,6 +170,7 @@
   </main>
 
   <script src="assets/app.js"></script>
+  <script src="assets/historique.js"></script>
   <script>
     requireAuth();
     renderTopbar('communication.html');
@@ -301,6 +305,23 @@
       if (res.success) loadModeles();
       else alert('Erreur : ' + res.error.message);
     }
+
+    document.getElementById('btn-modeles-types').addEventListener('click', () => {
+      const H = window.Historique;
+      const titres = modelesData.map(m => H.norm(m.titre));
+      H.ouvrirPropositions({
+        title: 'Modèles de mails types',
+        intro: 'Textes repris de vos envois 2025 et 2026, rendus génériques. Les variables {{annee}}, {{date_evenement}}, {{lieu}}... se remplissent seules ; les mots entre [crochets] restent à compléter. Les modèles déjà présents sont grisés.',
+        items: H.MODELES_TYPES,
+        deja: it => titres.indexOf(H.norm(it.titre)) >= 0,
+        ligne: it => ({ titre: it.titre, detail: it.categorie.replace(/_/g, ' ') + ' - ' + it.objet }),
+        ajouter: async it => {
+          const res = await apiPost('communication.modeles.create', { titre: it.titre, categorie: it.categorie, objet: it.objet, corps: it.corps, notes: it.notes });
+          return !!res.success;
+        },
+        onDone: loadModeles
+      });
+    });
 
     document.getElementById('form-modele').addEventListener('submit', async e => {
       e.preventDefault();

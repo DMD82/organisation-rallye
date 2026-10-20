@@ -40,6 +40,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <h3 style="margin:0">Partenaires de l'édition <span class="hint" id="compteur"></span></h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="secondary" id="btn-reprise" title="Recopie les partenaires d'une édition passée, à solliciter de nouveau">Reprendre une édition passée</button>
           <button class="secondary" id="btn-sync" title="Récupère les nouvelles réponses du formulaire Google">Récupérer le formulaire Google</button>
           <button class="secondary" id="btn-import-partenaires">Importer Excel</button>
           <button class="secondary" id="btn-export">Exporter CSV</button>
@@ -131,6 +132,7 @@
         document.getElementById('btn-ajout').disabled = true;
         document.getElementById('btn-import-partenaires').disabled = true;
         document.getElementById('btn-sync').disabled = true;
+        document.getElementById('btn-reprise').disabled = true;
         return;
       }
       editionActiveId = editionRes.data.id;
@@ -292,6 +294,50 @@
       const d = res.data;
       msg.textContent = d.crees + ' nouveau(x) partenaire(s) créé(s), ' + d.ignores + ' déjà présent(s), sur ' + d.total + ' réponse(s).';
       loadPartenariats();
+    });
+
+    // ---------- Reprise d'une édition passée ----------
+    document.getElementById('btn-reprise').addEventListener('click', async () => {
+      const edRes = await apiGet('generale.editions.list');
+      const autres = (edRes.success ? edRes.data : []).filter(e => e.id !== editionActiveId)
+        .sort((a, b) => String(b.annee).localeCompare(String(a.annee)));
+      if (!autres.length) { alert("Aucune autre édition n'existe encore."); return; }
+
+      const ancien = document.getElementById('reprise-overlay');
+      if (ancien) ancien.remove();
+      const overlay = el('div', { class: 'modal-overlay', id: 'reprise-overlay' });
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+      const choix = el('select', {}, ...autres.map(e => el('option', { value: e.id, text: e.annee + (e.theme ? ' - ' + e.theme : '') })));
+      const resultat = el('div', { class: 'hint', style: 'margin:10px 0;max-height:40vh;overflow:auto' });
+      const bouton = el('button', { text: 'Voir les partenaires à reprendre' });
+      let confirme = false;
+      const reinit = () => { confirme = false; bouton.textContent = 'Voir les partenaires à reprendre'; resultat.textContent = ''; };
+      choix.addEventListener('change', reinit);
+      bouton.addEventListener('click', async () => {
+        bouton.disabled = true;
+        const res = await apiPost('partenaires.reprendre', { source_edition_id: choix.value, edition_id: editionActiveId, simuler: !confirme });
+        bouton.disabled = false;
+        if (!res.success) { resultat.textContent = 'Erreur : ' + res.error.message; return; }
+        const d = res.data;
+        if (confirme) {
+          resultat.textContent = d.crees + ' partenaire(s) repris. Ils sont au statut "à solliciter".';
+          bouton.style.display = 'none';
+          loadPartenariats();
+          return;
+        }
+        if (!d.total) { resultat.textContent = 'Rien à reprendre : tout est déjà présent (ou refusé).'; return; }
+        resultat.textContent = d.total + ' partenaire(s) seront ajoutés (les refus et les doublons sont exclus) : ' + d.noms.join(', ') + '.';
+        confirme = true;
+        bouton.textContent = 'Confirmer la reprise';
+      });
+      const fermer = el('button', { class: 'secondary', text: 'Fermer' });
+      fermer.addEventListener('click', () => overlay.remove());
+      overlay.append(el('div', { class: 'modal-box', style: 'max-width:640px' },
+        el('h3', { style: 'margin-top:0', text: 'Reprendre une édition passée' }),
+        el('p', { class: 'hint', text: "Choisissez l'édition dont recopier les partenaires (contact, atelier, besoins). Ils arrivent au statut à solliciter ; aucun partenaire existant n'est modifié." }),
+        choix, resultat,
+        el('div', { style: 'display:flex;gap:8px' }, bouton, fermer)));
+      document.body.appendChild(overlay);
     });
 
     // ---------- Import / export ----------

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rallye Citoyen - Créations</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar"></header>
+
+  <main>
+    <div class="card" id="edition-banner"><div class="hint">Chargement de l'édition active…</div></div>
+
+    <div class="card">
+      <h3>Ajouter une création</h3>
+      <p class="hint">Un support à concevoir (logo, carton, dossier, bâche...). Indiquez quand il doit être prêt ; le reste se complète plus tard dans le tableau.</p>
+      <form class="inline-form" id="form-creation">
+        <div><label>Création</label><input name="nom" required placeholder="Bâche partenaires"></div>
+        <div><label>Catégorie</label><select name="categorie" id="f-categorie"></select></div>
+        <div><label>Prête à J-</label><input name="jours_avant" type="number" placeholder="30"></div>
+        <div style="grid-column:1/-2"><label>Utilisée pour</label><input name="usage" placeholder="Quand et pour quoi on s'en sert"></div>
+        <div><button type="submit" id="btn-ajout">Ajouter</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <h3 style="margin:0">Créations <select id="edition-vue" style="width:auto;display:inline-block;margin:0 6px"></select> <span class="hint" id="compteur"></span></h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="secondary" id="btn-import">Importer Excel</button>
+          <button class="secondary" id="btn-types" title="Supports relevés en 2025 et 2026">Ajouter des créations types</button>
+          <button class="secondary" id="btn-reprise" title="Recopie les créations d'une édition passée avec le lien de leur fichier">Reprendre une édition passée</button>
+          <button class="secondary" id="btn-frise-png">Frise (PNG)</button>
+          <button class="secondary" id="btn-frise-xlsx">Frise (Excel)</button>
+          <button class="secondary" id="btn-export">Exporter CSV</button>
+        </div>
+      </div>
+      <div id="frise-conteneur" style="border:1px solid var(--border);border-radius:8px;margin:12px 0;padding:8px"></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Prête le</th><th>Création</th><th>Responsable / prestataire</th><th>Statut</th><th>Liens (Canva, Drive)</th><th>Édition précédente</th><th></th></tr></thead>
+          <tbody id="creations-body"><tr><td colspan="7" class="hint">Chargement…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <details>
+        <summary>Historique par création</summary>
+        <p class="section-hint">Toutes les éditions côte à côte : retrouvez la version d'une année précédente pour repartir d'elle.</p>
+        <div id="historique"></div>
+      </details>
+    </div>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script src="assets/frise.js?v=3"></script>
+  <script src="assets/historique.js"></script>
+  <script>
+    requireAuth();
+    renderTopbar('creations.html');
+
+    const H = window.Historique;
+    const STATUTS = [['a_faire', 'À faire'], ['en_cours', 'En cours'], ['a_valider', 'À valider'], ['valide', 'Validé'], ['livre', 'Livré']];
+    let editionActiveId = null, editionActive = null, voirId = null, voirEd = null, creationsData = [], editionsData = [];
+
+    function el(tag, attrs, ...enfants) {
+      const n = document.createElement(tag);
+      Object.entries(attrs || {}).forEach(([k, v]) => {
+        if (k === 'text') n.textContent = v;
+        else if (k === 'class') n.className = v;
+        else if (k === 'style') n.style.cssText = v;
+        else n.setAttribute(k, v);
+      });
+      enfants.forEach(e => { if (e !== null && e !== undefined) n.append(e); });
+      return n;
+    }
+    const labelCat = id => (H.CATEGORIES_CREATION.find(c => c.id === id) || { label: id || '' }).label;
+    function urlSure(u) { return /^https?:\/\//i.test(u || '') ? u : ''; }
+    function quand(c) {
+      if (c.jours_avant === '' || c.jours_avant === undefined || c.jours_avant === null) return { txt: 'Date à fixer', date: '' };
+      const j = Number(c.jours_avant);
+      const jr = j > 0 ? 'J-' + j : (j === 0 ? 'Jour J' : 'J+' + (-j));
+      let date = '';
+      if (voirEd && voirEd.date_evenement) {
+        const d = new Date(String(voirEd.date_evenement).slice(0, 10) + 'T00:00:00Z');
+        date = new Date(d.getTime() - j * 86400000).toISOString().slice(0, 10);
+      }
+      return { txt: date ? date.split('-').reverse().join('/') + ' (' + jr + ')' : jr, date: date };
+    }
+    function trier(l) {
+      return l.slice().sort((a, b) => {
+        const x = a.jours_avant === '' ? -1e9 : Number(a.jours_avant), y = b.jours_avant === '' ? -1e9 : Number(b.jours_avant);
+        return y - x;
+      });
+    }
+
+    async function init() {
+      const [editionRes, edsRes] = await Promise.all([apiGet('generale.editions.active'), apiGet('generale.editions.list')]);
+      editionsData = edsRes.success ? edsRes.data : [];
+      const banner = document.getElementById('edition-banner');
+      banner.textContent = '';
+      document.getElementById('f-categorie').append(...H.CATEGORIES_CREATION.map(c => el('option', { value: c.id, text: c.label })));
+      if (!editionRes.success || !editionRes.data) {
+        banner.append(el('div', { class: 'hint' }, "Aucune édition active. Allez d'abord dans ", el('a', { href: 'generale.html', text: 'Générale' }), ' pour en créer une et la marquer active.'));
+        ['btn-ajout', 'btn-types', 'btn-reprise', 'btn-import'].forEach(id => document.getElementById(id).disabled = true);
+        return;
+      }
+      editionActive = editionRes.data; editionActiveId = editionActive.id;
+      voirId = editionActiveId; voirEd = editionsData.find(e => e.id === voirId) || editionActive;
+      const selVue = document.getElementById('edition-vue');
+      editionsData.slice().sort((a, b) => String(b.annee).localeCompare(String(a.annee))).forEach(e =>
+        selVue.append(el('option', { value: e.id, text: e.annee + (e.id === editionActiveId ? ' (active)' : '') })));
+      selVue.value = voirId;
+      selVue.addEventListener('change', () => { voirId = selVue.value; voirEd = editionsData.find(e => e.id === voirId) || editionActive; charger(); });
+      banner.append(el('div', { class: 'hint', text: 'Édition active' }),
+        el('h2', { style: 'margin:4px 0', text: (editionActive.annee || '') + ' - ' + (editionActive.theme || '') }));
+      charger();
+    }
+
+    async function charger() {
+      const res = await apiGet('creations.list');
+      const toutes = res.success ? res.data : [];
+      creationsData = toutes.filter(c => c.edition_id === voirId);
+      afficher();
+      afficherHistorique(toutes);
+    }
+
+    function patch(id, p) {
+      return apiPost('creations.update', Object.assign({ id: id }, p)).then(r => { if (!r.success) alert('Erreur : ' + r.error.message); return r; });
+    }
+
+    function afficher() {
+      const tbody = document.getElementById('creations-body');
+      tbody.textContent = '';
+      const sans = creationsData.filter(c => !c.lien_source && !c.lien_fichier).length;
+      document.getElementById('compteur').textContent = creationsData.length ? '(' + creationsData.length + (sans ? ', dont ' + sans + ' sans lien' : '') + ')' : '';
+      if (!creationsData.length) {
+        tbody.append(el('tr', {}, el('td', { colspan: '7', class: 'hint', text: "Aucune création pour l'instant. Ajoutez-en une, prenez les créations types, ou reprenez une édition passée." })));
+      }
+      trier(creationsData).forEach(c => {
+        const q = quand(c);
+        const input = (champ, ph, w) => {
+          const i = el('input', { type: 'text', value: c[champ] || '', placeholder: ph, style: 'width:' + (w || '100%') });
+          i.addEventListener('change', () => patch(c.id, { [champ]: i.value.trim() }));
+          return i;
+        };
+        const sel = el('select', { class: 'statut-inline' }, ...STATUTS.map(([v, t]) => el('option', { value: v, text: t })));
+        sel.value = c.statut || 'a_faire';
+        sel.addEventListener('change', () => patch(c.id, { statut: sel.value }));
+
+        const jours = el('input', { type: 'number', value: c.jours_avant, style: 'width:70px', title: 'Nombre de jours avant le Jour J' });
+        jours.addEventListener('change', async () => { await patch(c.id, { jours_avant: jours.value }); charger(); });
+
+        const prec = urlSure(c.lien_precedent)
+          ? el('a', { href: urlSure(c.lien_precedent), target: '_blank', rel: 'noopener', text: 'Ouvrir' })
+          : el('span', { class: 'hint', text: '-' });
+
+        const supp = el('button', { class: 'secondary', text: 'Supprimer' });
+        supp.addEventListener('click', async () => {
+          if (!confirm('Supprimer cette création ?')) return;
+          const r = await apiPost('creations.delete', { id: c.id });
+          if (r.success) charger(); else alert('Erreur : ' + r.error.message);
+        });
+
+        const ouvr = u => urlSure(u) ? el('a', { href: urlSure(u), target: '_blank', rel: 'noopener', text: 'Ouvrir', style: 'margin-left:6px' }) : null;
+        const liens = el('div', {},
+          el('div', { style: 'display:flex;align-items:center' }, input('lien_source', 'Lien Canva (modifiable)'), ouvr(c.lien_source)),
+          el('div', { style: 'display:flex;align-items:center' }, input('lien_fichier', 'Fichier final (Drive)'), ouvr(c.lien_fichier)));
+
+        tbody.append(el('tr', {},
+          el('td', { style: 'white-space:nowrap' }, el('div', { text: q.txt }), el('div', {}, 'J- ', jours)),
+          el('td', {},
+            el('strong', { text: c.nom }),
+            el('div', { class: 'hint', text: labelCat(c.categorie) + (c.usage ? ' - ' + c.usage : '') }),
+            input('notes', 'Notes')),
+          el('td', {}, input('responsable', 'Responsable'), input('prestataire', 'Prestataire')),
+          el('td', {}, sel),
+          el('td', { style: 'min-width:240px' }, liens),
+          el('td', {}, prec),
+          el('td', {}, supp)));
+      });
+      afficherFrise();
+    }
+
+    function jalonsFrise() {
+      return trier(creationsData).filter(c => c.jours_avant !== '').map(c => {
+        const q = quand(c);
+        return { id: c.id, label: c.nom, date: q.date, jours_avant: Number(c.jours_avant), passe: false };
+      }).filter(j => j.date);
+    }
+    function afficherFrise() {
+      const box = document.getElementById('frise-conteneur');
+      const j = jalonsFrise();
+      box.style.display = j.length ? '' : 'none';
+      if (j.length) Frise.afficher(box, j, String(voirEd.date_evenement).slice(0, 10), 'Rallye Citoyen ' + voirEd.annee + ' - créations');
+    }
+    document.getElementById('btn-frise-png').addEventListener('click', () => {
+      const j = jalonsFrise();
+      if (!j.length) { alert("Renseignez la date de l'événement et le moment de chaque création."); return; }
+      Frise.exporterPng(j, String(voirEd.date_evenement).slice(0, 10), 'Rallye Citoyen ' + voirEd.annee + ' - créations', 'frise-creations.png');
+    });
+    document.getElementById('btn-frise-xlsx').addEventListener('click', async () => {
+      const j = jalonsFrise();
+      if (!j.length) { alert("Renseignez la date de l'événement et le moment de chaque création."); return; }
+      try { await Frise.exporterExcel(j, String(voirEd.date_evenement).slice(0, 10), 'frise-creations.xlsx'); }
+      catch (err) { alert('Erreur : ' + err.message); }
+    });
+
+    function afficherHistorique(toutes) {
+      const zone = document.getElementById('historique');
+      zone.textContent = '';
+      const annee = id => ((editionsData.find(e => e.id === id)) || {}).annee || id;
+      const groupes = {};
+      toutes.forEach(c => { (groupes[H.norm(c.nom)] = groupes[H.norm(c.nom)] || []).push(c); });
+      const cles = Object.keys(groupes).sort();
+      if (!cles.length) { zone.append(el('div', { class: 'hint', text: "Pas encore d'historique." })); return; }
+      const tb = el('tbody');
+      cles.forEach(k => {
+        const l = groupes[k].sort((a, b) => String(annee(b.edition_id)).localeCompare(String(annee(a.edition_id))));
+        const cell = el('td');
+        l.forEach(c => {
+          const u = urlSure(c.lien_fichier) || urlSure(c.lien_source);
+          cell.append(u ? el('a', { href: u, target: '_blank', rel: 'noopener', text: annee(c.edition_id) }) : el('span', { class: 'hint', text: annee(c.edition_id) + ' (sans fichier)' }), ' ');
+        });
+        tb.append(el('tr', {}, el('td', { text: l[0].nom }), cell));
+      });
+      zone.append(el('table', {}, el('thead', {}, el('tr', {}, el('th', { text: 'Création' }), el('th', { text: 'Fichiers par édition' }))), tb));
+    }
+
+    document.getElementById('form-creation').addEventListener('submit', async e => {
+      e.preventDefault();
+      const p = Object.fromEntries(new FormData(e.target).entries());
+      p.edition_id = voirId;
+      const r = await apiPost('creations.create', p);
+      if (r.success) { e.target.reset(); charger(); } else alert('Erreur : ' + r.error.message);
+    });
+
+    document.getElementById('btn-types').addEventListener('click', () => {
+      const noms = creationsData.map(c => H.norm(c.nom));
+      const signe = n => (n > 0 ? 'J-' + n : 'J+' + (-n));
+      H.ouvrirPropositions({
+        title: 'Créations types',
+        intro: "Supports relevés dans vos échanges 2025 et 2026, avec le moment où ils étaient prêts. Cochez ceux à ajouter ; ceux déjà présents sont grisés. Les délais marqués \"estimation\" sont à confirmer.",
+        items: H.CREATIONS_TYPES,
+        deja: it => noms.indexOf(H.norm(it.nom)) >= 0,
+        ligne: it => ({ titre: signe(it.joursAvant) + '  ' + it.nom, detail: labelCat(it.categorie) + ' - ' + it.usage + ' (' + it.preuve + ')' }),
+        ajouter: async it => (await apiPost('creations.create', { edition_id: voirId, nom: it.nom, categorie: it.categorie, usage: it.usage, jours_avant: it.joursAvant })).success,
+        onDone: charger
+      });
+    });
+
+    document.getElementById('btn-reprise').addEventListener('click', () => {
+      const autres = editionsData.filter(e => e.id !== voirId).sort((a, b) => String(b.annee).localeCompare(String(a.annee)));
+      if (!autres.length) { alert("Aucune autre édition n'existe encore."); return; }
+      const ancien = document.getElementById('reprise-overlay'); if (ancien) ancien.remove();
+      const overlay = el('div', { class: 'modal-overlay', id: 'reprise-overlay' });
+      overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+      const choix = el('select', {}, ...autres.map(e => el('option', { value: e.id, text: e.annee + (e.theme ? ' - ' + e.theme : '') })));
+      const resultat = el('div', { class: 'hint', style: 'margin:10px 0;max-height:40vh;overflow:auto' });
+      const bouton = el('button', { text: 'Voir les créations à reprendre' });
+      let confirme = false;
+      choix.addEventListener('change', () => { confirme = false; bouton.textContent = 'Voir les créations à reprendre'; resultat.textContent = ''; });
+      bouton.addEventListener('click', async () => {
+        bouton.disabled = true;
+        const r = await apiPost('creations.reprendre', { source_edition_id: choix.value, edition_id: voirId, simuler: !confirme });
+        bouton.disabled = false;
+        if (!r.success) { resultat.textContent = 'Erreur : ' + r.error.message; return; }
+        const d = r.data;
+        if (confirme) { resultat.textContent = d.crees + ' création(s) reprise(s), avec le lien de leur fichier précédent.'; bouton.style.display = 'none'; charger(); return; }
+        if (!d.total) { resultat.textContent = 'Rien à reprendre : tout est déjà présent.'; return; }
+        resultat.textContent = d.total + ' création(s) seront ajoutées : ' + d.noms.join(', ') + '.';
+        confirme = true; bouton.textContent = 'Confirmer la reprise';
+      });
+      const fermer = el('button', { class: 'secondary', text: 'Fermer' });
+      fermer.addEventListener('click', () => overlay.remove());
+      overlay.append(el('div', { class: 'modal-box', style: 'max-width:640px' },
+        el('h3', { style: 'margin-top:0', text: 'Reprendre une édition passée' }),
+        el('p', { class: 'hint', text: "Les créations de l'édition choisie sont recopiées (moment, usage, prestataire) au statut à faire. Le fichier de l'année passée est gardé sous « Édition précédente »." }),
+        choix, resultat, el('div', { style: 'display:flex;gap:8px' }, bouton, fermer)));
+      document.body.appendChild(overlay);
+    });
+
+    document.getElementById('btn-import').addEventListener('click', () => {
+      showImportModal({
+        title: 'Créations (' + (voirEd.annee || '') + ')',
+        action: 'creations.create',
+        fields: [
+          { key: 'nom', label: 'Création', required: true },
+          { key: 'categorie', label: 'Catégorie (identite, imprimes, dossiers, signaletique, goodies, numerique, autre)' },
+          { key: 'usage', label: 'Utilisée pour' },
+          { key: 'jours_avant', label: 'Prête à J-' },
+          { key: 'lien_source', label: 'Lien Canva (modifiable)' },
+          { key: 'lien_fichier', label: 'Fichier final (Drive)' },
+          { key: 'statut', label: 'Statut' },
+          { key: 'notes', label: 'Notes' }
+        ],
+        defaults: { edition_id: voirId },
+        onDone: charger
+      });
+    });
+    document.getElementById('btn-export').addEventListener('click', () => exportCSV('creations', creationsData));
+
+    init();
+  </script>
+</body>
+</html>

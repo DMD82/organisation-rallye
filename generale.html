@@ -77,16 +77,23 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
           <button class="secondary" id="btn-frise-png">Frise en image (PNG)</button>
           <button class="secondary" id="btn-frise-xlsx">Frise en Excel</button>
+          <button class="secondary" id="btn-jalons-types" title="Échéances observées en 2025 et 2026">Ajouter des échéances types</button>
+          <button class="secondary" id="btn-classer" title="Range les échéances sans niveau">Classer par niveau</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <label style="margin:0">Frise :</label>
+          <select id="frise-niveau" style="width:auto"></select>
         </div>
         <div id="frise-conteneur" style="border:1px solid var(--border);border-radius:8px;margin-bottom:16px;padding:8px"></div>
         <table>
-          <thead><tr><th>Date</th><th>Échéance</th><th>Écart au Jour J</th><th></th></tr></thead>
-          <tbody id="calendrier-body"><tr><td colspan="4" class="hint">Chargement…</td></tr></tbody>
+          <thead><tr><th>Date</th><th>Échéance</th><th>Niveau</th><th>Écart au Jour J</th><th></th></tr></thead>
+          <tbody id="calendrier-body"><tr><td colspan="5" class="hint">Chargement…</td></tr></tbody>
         </table>
 
         <h4 style="margin-top:20px">Ajouter une échéance</h4>
         <form class="inline-form" id="form-jalon">
           <div><label>Date</label><input name="date_jalon" type="date" required></div>
+          <div><label>Niveau</label><select name="niveau_jalon" id="niveau-jalon"></select></div>
           <div style="grid-column:2/-1"><label>Libellé</label><input name="libelle_jalon" required></div>
           <div><button type="submit">Ajouter</button></div>
         </form>
@@ -132,20 +139,39 @@
 
   <script src="assets/app.js"></script>
   <script src="assets/frise.js?v=3"></script>
+  <script src="assets/historique.js"></script>
   <script>
     requireAuth();
     renderTopbar('generale.html');
 
     let editionsData = [];
 
-    let friseJalons = [], friseDate = '', friseTitre = 'Calendrier';
+    let friseJalons = [], friseDate = '', friseTitre = 'Calendrier', friseNiveau = 'toutes';
+    const NIV = window.Historique.NIVEAUX;
+    const labelNiveau = id => (NIV.find(n => n.id === id) || { label: 'Toutes les échéances' }).label;
+    function jalonsVue() {
+      return friseNiveau === 'toutes' ? friseJalons : friseJalons.filter(j => j.categorie === friseNiveau);
+    }
+    function titreVue() { return friseNiveau === 'toutes' ? friseTitre : friseTitre + ' - ' + labelNiveau(friseNiveau); }
+    function nomFichier(ext) { return 'frise-rallye-citoyen' + (friseNiveau === 'toutes' ? '' : '-' + friseNiveau) + '.' + ext; }
+    function afficherFrise() {
+      Frise.afficher(document.getElementById('frise-conteneur'), jalonsVue(), friseDate, titreVue());
+    }
+    (function initNiveaux() {
+      const sel = document.getElementById('frise-niveau');
+      const opt = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; return o; };
+      sel.append(opt('toutes', 'Toutes les échéances'), ...NIV.map(n => opt(n.id, n.label)));
+      sel.addEventListener('change', () => { friseNiveau = sel.value; afficherFrise(); });
+      const sj = document.getElementById('niveau-jalon');
+      sj.append(opt('', 'Non classé'), ...NIV.map(n => opt(n.id, n.label)));
+    })();
     document.getElementById('btn-frise-png').addEventListener('click', () => {
-      if (!friseJalons.length) { alert("Renseignez d'abord la date de l'événement."); return; }
-      Frise.exporterPng(friseJalons, friseDate, friseTitre, 'frise-rallye-citoyen.png');
+      if (!jalonsVue().length) { alert("Aucune échéance à afficher pour cette vue."); return; }
+      Frise.exporterPng(jalonsVue(), friseDate, titreVue(), nomFichier('png'));
     });
     document.getElementById('btn-frise-xlsx').addEventListener('click', async () => {
-      if (!friseJalons.length) { alert("Renseignez d'abord la date de l'événement."); return; }
-      try { await Frise.exporterExcel(friseJalons, friseDate, 'frise-rallye-citoyen.xlsx'); }
+      if (!jalonsVue().length) { alert("Aucune échéance à afficher pour cette vue."); return; }
+      try { await Frise.exporterExcel(jalonsVue(), friseDate, nomFichier('xlsx')); }
       catch (err) { alert('Erreur : ' + err.message); }
     });
 
@@ -195,7 +221,7 @@
       friseJalons = d.calendrier || [];
       friseDate = d.edition ? d.edition.date_evenement : '';
       friseTitre = d.edition ? 'Rallye Citoyen ' + d.edition.annee + ' - calendrier' : 'Calendrier';
-      Frise.afficher(document.getElementById('frise-conteneur'), friseJalons, friseDate, friseTitre);
+      afficherFrise();
 
       renderCalendrier();
     }
@@ -210,7 +236,7 @@
       calBody.textContent = '';
       if (!friseJalons.length) {
         const tr = document.createElement('tr'), td = document.createElement('td');
-        td.colSpan = 4; td.className = 'hint';
+        td.colSpan = 5; td.className = 'hint';
         td.textContent = "Renseignez la date de l'événement sur l'édition active pour voir le calendrier.";
         tr.append(td); calBody.append(tr); return;
       }
@@ -233,6 +259,13 @@
           await sauverJalon(j.id, { label: labelIn.value.trim() });
         });
 
+        const niv = document.createElement('select');
+        [['', 'Non classé']].concat(NIV.map(n => [n.id, n.label])).forEach(([v, t]) => {
+          const o = document.createElement('option'); o.value = v; o.textContent = t; niv.append(o);
+        });
+        niv.value = j.categorie || '';
+        niv.addEventListener('change', () => sauverJalon(j.id, { categorie: niv.value }));
+
         const del = document.createElement('button');
         del.className = 'secondary'; del.textContent = 'Supprimer';
         del.addEventListener('click', () => deleteJalon(j.id));
@@ -240,7 +273,7 @@
         const c = (...n) => { const td = document.createElement('td'); td.append(...n); return td; };
         const jr = document.createElement('span');
         jr.className = 'hint'; jr.textContent = j.jours_avant > 0 ? 'J-' + j.jours_avant : (j.jours_avant === 0 ? 'Jour J' : 'J+' + Math.abs(j.jours_avant));
-        tr.append(c(dateIn), c(labelIn), c(jr), c(del));
+        tr.append(c(dateIn), c(labelIn), c(niv), c(jr), c(del));
         calBody.append(tr);
       });
     }
@@ -329,12 +362,39 @@
       else alert('Erreur : ' + res.error.message);
     }
 
+    document.getElementById('btn-jalons-types').addEventListener('click', () => {
+      const H = window.Historique;
+      const libellesExistants = friseJalons.map(j => H.norm(j.label));
+      const signe = n => (n > 0 ? 'J-' + n : 'J+' + (-n));
+      H.ouvrirPropositions({
+        title: 'Échéances types',
+        intro: 'Échéances relevées dans vos échanges 2025 et 2026, exprimées par rapport au Jour J. Cochez celles à ajouter : elles suivront la date de l\'événement. Les échéances déjà présentes sont grisées.',
+        items: H.JALONS_TYPES,
+        deja: it => libellesExistants.indexOf(H.norm(it.label)) >= 0,
+        ligne: it => ({ titre: signe(it.joursAvant) + '  ' + it.label, detail: labelNiveau(it.niveau) + ' - observé : ' + it.preuve }),
+        ajouter: async it => {
+          const res = await apiPost('generale.jalons.create', { jours_avant: it.joursAvant, label: it.label, categorie: it.niveau });
+          return !!res.success;
+        },
+        onDone: loadVision
+      });
+    });
+
+    document.getElementById('btn-classer').addEventListener('click', async () => {
+      const H = window.Historique;
+      const a = friseJalons.filter(j => !j.categorie && H.niveauPour(j.label));
+      if (!a.length) { alert("Rien à classer automatiquement : les échéances sans niveau se rangent à la main dans le tableau."); return; }
+      if (!confirm(a.length + ' échéance(s) sans niveau seront rangées d\'après leur libellé. Continuer ?')) return;
+      for (const j of a) await apiPost('generale.jalons.update', { id: j.id, categorie: H.niveauPour(j.label) });
+      loadVision();
+    });
+
     document.getElementById('form-jalon').addEventListener('submit', async e => {
       e.preventDefault();
       const f = Object.fromEntries(new FormData(e.target).entries());
       if (!friseDate) { alert("Renseignez d'abord la date de l'événement sur l'édition active."); return; }
       const jours = joursEntre(f.date_jalon, friseDate);
-      const res = await apiPost('generale.jalons.create', { jours_avant: jours, label: f.libelle_jalon });
+      const res = await apiPost('generale.jalons.create', { jours_avant: jours, label: f.libelle_jalon, categorie: f.niveau_jalon || '' });
       if (res.success) { e.target.reset(); loadVision(); }
       else alert('Erreur : ' + res.error.message);
     });
