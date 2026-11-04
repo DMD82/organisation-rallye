@@ -3,100 +3,547 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rallye Citoyen - Candidature partenaire</title>
+  <title>Rallye Citoyen - Participation partenaire et mécène</title>
   <link rel="stylesheet" href="assets/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+  <style>
+    /* Page publique : identité Rallye (marine, or, vert de l'écusson), sections numérotées dans l'ordre du formulaire. */
+    :root {
+      --rc-marine: #1A2744; --rc-or: #B8932A; --rc-vert: #1F7A4A; --rc-fond: #F4F2EC;
+      --rc-carte: #FFFFFF; --rc-texte: #1C2230; --rc-doux: #5E6676; --rc-trait: #DCD8CD; --rc-erreur: #B42318;
+      --rc-titre: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+      --rc-corps: "Barlow", -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    body { background: var(--rc-fond); color: var(--rc-texte); font-family: var(--rc-corps); }
+    .rc-bandeau { background: var(--rc-marine); color: #fff; position: relative; overflow: hidden; }
+    .rc-bandeau::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px;
+      background: linear-gradient(90deg, var(--rc-vert) 0 33%, var(--rc-or) 33% 66%, var(--rc-vert) 66%); }
+    .rc-bandeau-in { max-width: 760px; margin: 0 auto; padding: 32px 20px 24px; display: flex; gap: 24px; align-items: center; }
+    .rc-titre { flex: 1 1 auto; min-width: 0; }
+    .rc-logo { flex: none; width: 170px; height: auto; background: #fff; border-radius: 10px; padding: 8px 10px; }
+    @media (max-width: 620px) { .rc-bandeau-in { flex-direction: column-reverse; align-items: flex-start; } .rc-logo { width: 150px; } }
+    .rc-photos { max-width: 760px; margin: 0 auto; padding: 0 20px 44px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .rc-photos figure { margin: 0; position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 4 / 3; max-width: 100%; }
+    .rc-photos img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .rc-photos figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 10px 7px; font-size: .75rem; color: #fff; background: linear-gradient(transparent, rgba(10,16,30,.75)); }
+    @media (max-width: 520px) { .rc-photos { grid-template-columns: 1fr 1fr; } .rc-photos figure:last-child { display: none; } }
+    .rc-sur { font-family: var(--rc-titre); letter-spacing: .14em; text-transform: uppercase; color: var(--rc-or); font-size: .85rem; margin: 0 0 8px; }
+    .rc-bandeau h1 { font-family: var(--rc-titre); font-size: clamp(1.9rem, 5vw, 2.6rem); line-height: 1.05; margin: 0 0 12px; text-wrap: balance; }
+    .rc-bandeau p { margin: 0; max-width: 56ch; color: rgba(255,255,255,.82); line-height: 1.5; }
+
+    main.rc-main { max-width: 760px; margin: -24px auto 48px; padding: 0 16px; position: relative; }
+    .rc-section { background: var(--rc-carte); border: 1px solid var(--rc-trait); border-radius: 10px; padding: 22px 22px 8px; margin-bottom: 14px; }
+    .rc-section > h2 { display: flex; align-items: baseline; gap: 10px; font-family: var(--rc-titre); font-size: 1.35rem; color: var(--rc-marine); margin: 0 0 4px; }
+    .rc-section > h2 .num { font-size: 1rem; color: var(--rc-or); min-width: 1.6em; }
+    .rc-section > .rc-intro { color: var(--rc-doux); font-size: .92rem; margin: 0 0 16px; line-height: 1.5; }
+
+    .grille { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+    .grille .large { grid-column: 1 / -1; }
+    @media (max-width: 560px) { .grille { grid-template-columns: 1fr; } }
+
+    .champ { margin-bottom: 16px; min-width: 0; }
+    .champ > label, .champ > .lbl, .repete label { display: block; font-weight: 600; font-size: .85rem; color: var(--rc-texte); margin-bottom: 5px; }
+    .champ .opt { font-weight: 400; color: var(--rc-doux); }
+    .rc-main input:not([type=radio]):not([type=checkbox]), .rc-main select, .rc-main textarea {
+      width: 100%; font: inherit; font-size: .95rem; color: var(--rc-texte); background: #fff;
+      border: 1px solid var(--rc-trait); border-radius: 6px; padding: 9px 11px; }
+    .rc-main textarea { resize: vertical; line-height: 1.45; }
+    .rc-main input:focus, .rc-main select:focus, .rc-main textarea:focus { outline: 2px solid var(--rc-or); outline-offset: 1px; border-color: var(--rc-or); }
+    .aide { color: var(--rc-doux); font-size: .82rem; margin: 6px 0 0; line-height: 1.45; }
+    .aide a { color: var(--rc-vert); font-weight: 600; }
+    .aide-reprise { color: var(--rc-vert); }
+
+    .choix-type { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+    @media (max-width: 640px) { .choix-type { grid-template-columns: 1fr; } }
+    .choix-type label { display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 14px; border: 1px solid var(--rc-trait); border-radius: 8px; cursor: pointer; background: #fff; transition: border-color .15s, box-shadow .15s; }
+    .choix-type label:hover { border-color: var(--rc-or); }
+    .choix-type label:has(input:checked) { border-color: var(--rc-marine); box-shadow: inset 0 0 0 1px var(--rc-marine); background: #F7F5EF; }
+    .choix-type input { margin-top: 4px; accent-color: var(--rc-marine); flex: none; width: auto; padding: 0; }
+    .choix-type label { min-width: 0; white-space: normal; }
+    .choix-type label > div { flex: 1 1 auto; min-width: 0; }
+    .choix-type strong { display: block; font-family: var(--rc-titre); font-size: 1.15rem; color: var(--rc-marine); }
+    .choix-type span { color: var(--rc-doux); font-size: .85rem; line-height: 1.4; }
+
+    .cases { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+    @media (max-width: 560px) { .cases { grid-template-columns: 1fr; } }
+    .cases label { display: flex; gap: 8px; align-items: center; font-weight: 400; font-size: .92rem; margin: 0; cursor: pointer; }
+    .cases input { accent-color: var(--rc-vert); width: auto; }
+
+    .repete { display: grid; gap: 10px; margin-bottom: 10px; align-items: end; }
+    .repete > div { min-width: 0; }
+    .repete label { font-weight: 500; font-size: .8rem; color: var(--rc-doux); }
+    @media (max-width: 560px) { .repete { grid-template-columns: 1fr !important; padding-bottom: 10px; border-bottom: 1px dashed var(--rc-trait); } }
+    .rc-main button.secondary { background: transparent; color: var(--rc-marine); border: 1px solid var(--rc-trait); border-radius: 6px; padding: 8px 12px; font: inherit; font-size: .88rem; font-weight: 600; cursor: pointer; }
+    .rc-main button.secondary:hover { border-color: var(--rc-marine); }
+    .rc-main button.retirer { padding: 9px 12px; color: var(--rc-doux); font-weight: 500; }
+
+    .rc-envoi { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 18px 22px; background: var(--rc-marine); border-radius: 10px; color: rgba(255,255,255,.8); font-size: .88rem; }
+    .rc-envoi p { margin: 0; flex: 1 1 260px; }
+    #btn-envoyer { background: var(--rc-or); color: var(--rc-marine); border: 0; border-radius: 6px; padding: 12px 22px; font-family: var(--rc-titre); font-size: 1.15rem; letter-spacing: .04em; cursor: pointer; }
+    #btn-envoyer:hover { filter: brightness(1.07); }
+    #btn-envoyer:disabled { opacity: .6; cursor: wait; }
+    #btn-envoyer:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    #erreur { color: var(--rc-erreur); background: #FDECEA; border-radius: 6px; padding: 10px 12px; margin: 10px 0 0; }
+
+    #confirmation-card { text-align: center; padding: 40px 22px; }
+    #confirmation-card h2 { justify-content: center; }
+    .pot { position: absolute; left: -9999px; }
+    .depot-logo { display: flex; gap: 14px; align-items: center; padding: 12px; border: 1px dashed var(--rc-trait); border-radius: 8px; background: #FBFAF7; }
+    .depot-logo img { width: 64px; height: 64px; object-fit: contain; background: #fff; border: 1px solid var(--rc-trait); border-radius: 6px; flex: none; }
+    .depot-logo input { border: 0 !important; padding: 0 !important; background: transparent !important; }
+    .aide.erreur { color: var(--rc-erreur); }
+    .recap { text-align: left; margin: 18px auto 0; max-width: 560px; border-top: 1px solid var(--rc-trait); }
+    .recap div { display: grid; grid-template-columns: 11em 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--rc-trait); font-size: .9rem; }
+    .recap dt { color: var(--rc-doux); margin: 0; }
+    .recap dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+    @media (max-width: 520px) { .recap div { grid-template-columns: 1fr; gap: 2px; } }
+    .coche { width: 54px; height: 54px; border-radius: 50%; background: var(--rc-vert); color: #fff; display: grid; place-items: center; font-size: 1.8rem; margin: 0 auto 12px; }
+  </style>
 </head>
 <body>
-  <header class="topbar"><div class="topbar-row"><h1>Rallye Citoyen - Devenir partenaire</h1></div></header>
+  <header class="rc-bandeau">
+    <div class="rc-bandeau-in">
+      <div class="rc-titre">
+        <p class="rc-sur">Rallye Citoyen de Tarn-et-Garonne</p>
+        <h1>Participer au Rallye Citoyen</h1>
+        <p>Plus de 1 000 collégiens et lycéens, une soixantaine de structures : tenez un atelier, soutenez l'événement, ou les deux. L'équipe organisatrice revient vers vous après votre envoi.</p>
+      </div>
+      <img class="rc-logo" src="assets/logo-trinome.png" alt="Trinôme académique de Tarn-et-Garonne" width="520" height="320">
+    </div>
+    <div class="rc-photos" aria-label="Photos du Rallye Citoyen 2026">
+      <figure><img src="assets/photo-ateliers.jpg" alt="L'allée des ateliers" loading="lazy"><figcaption>L'allée des ateliers</figcaption></figure>
+      <figure><img src="assets/photo-marine.jpg" alt="Le stand de la Marine nationale" loading="lazy"><figcaption>Le stand de la Marine nationale</figcaption></figure>
+      <figure><img src="assets/photo-gendarmerie.jpg" alt="Le stand de la gendarmerie" loading="lazy"><figcaption>Le stand de la gendarmerie</figcaption></figure>
+    </div>
+  </header>
 
-  <main style="max-width:600px">
-    <div class="card" id="form-card">
-      <p class="hint">
-        Vous souhaitez proposer un atelier ou soutenir le Rallye Citoyen ? Remplissez ce
-        formulaire, l'équipe organisatrice reviendra vers vous.
-      </p>
-      <form id="form-candidature">
-        <div style="position:absolute;left:-9999px" aria-hidden="true">
+  <main class="rc-main">
+    <div id="form-card">
+      <form id="form-participation" novalidate>
+        <div class="pot" aria-hidden="true">
           <label>Ne pas remplir<input name="hp" tabindex="-1" autocomplete="off"></label>
         </div>
 
-        <h4>Votre structure</h4>
-        <div style="margin-bottom:12px">
-          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Nom de votre structure *</label>
-          <input name="nom_entite" style="width:100%" required>
-        </div>
-        <div class="inline-form" style="margin-bottom:12px">
-          <div><label>Votre nom</label><input name="contact_nom"></div>
-          <div><label>Votre email</label><input name="contact_email" type="email"></div>
-        </div>
-        <div style="margin-bottom:12px">
-          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Présentation de votre structure</label>
-          <textarea name="presentation_texte" rows="3" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
-        </div>
+        <section class="rc-section">
+          <h2><span class="num">1</span>Votre participation</h2>
+          <p class="rc-intro">Choisissez ce qui correspond le mieux ; le formulaire s'adapte à votre choix.</p>
+          <div class="choix-type" role="radiogroup" aria-label="Type de participation">
+            <label><input type="radio" name="type_participation" value="partenaire" checked>
+              <div><strong>Partenaire</strong><span>Je tiens un atelier le jour du Rallye.</span></div></label>
+            <label><input type="radio" name="type_participation" value="partenaire_mecene">
+              <div><strong>Partenaire et mécène</strong><span>Je tiens un atelier et je soutiens le Rallye.</span></div></label>
+            <label><input type="radio" name="type_participation" value="mecene">
+              <div><strong>Mécène</strong><span>Je soutiens le Rallye sans tenir d'atelier.</span></div></label>
+          </div>
+        </section>
 
-        <h4>Votre atelier</h4>
-        <div class="inline-form" style="margin-bottom:12px">
-          <div><label>Type d'atelier</label><input name="type_atelier" placeholder="Ludique, Sportif, Réflexion..."></div>
-          <div><label>Équipes simultanées</label><input name="capacite_equipes" placeholder="2"></div>
-        </div>
-        <div style="margin-bottom:12px">
-          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Description de l'atelier</label>
-          <textarea name="descriptif_atelier" rows="3" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
-        </div>
+        <section class="rc-section">
+          <h2><span class="num">2</span>Votre structure</h2>
+          <p class="rc-intro">Déjà venue ? Choisissez-la dans la liste : son type et sa présentation de l'an dernier se remplissent seuls, et restent modifiables.</p>
+          <div class="grille">
+            <div class="champ">
+              <label for="nom_entite">Nom de la structure *</label>
+              <input id="nom_entite" name="nom_entite" list="structures-existantes" autocomplete="off" required
+                     placeholder="Choisir ou saisir un nom">
+              <datalist id="structures-existantes"></datalist>
+            </div>
+            <div class="champ">
+              <label for="typologie">Type de structure *</label>
+              <select id="typologie" name="typologie" required>
+                <option value="">Choisir...</option>
+                <option>Armées</option>
+                <option>Forces de sécurité</option>
+                <option>Secours et santé</option>
+                <option>Services de l'État</option>
+                <option>Associations patriotiques et mémoire</option>
+                <option>Associations</option>
+                <option>Entreprises</option>
+                <option>Collectivités</option>
+                <option>Monde agricole et environnement</option>
+                <option>Enseignement et formation</option>
+                <option>Autre</option>
+              </select>
+            </div>
+            <div class="champ">
+              <label for="contact_nom">Votre nom</label>
+              <input id="contact_nom" name="contact_nom" autocomplete="name">
+            </div>
+            <div class="champ">
+              <label for="contact_email">Votre email *</label>
+              <input id="contact_email" name="contact_email" type="email" autocomplete="email" required>
+            </div>
+            <div class="champ large">
+              <span class="lbl">Contacts supplémentaires <span class="opt">(facultatif)</span></span>
+              <div id="contacts-sup"></div>
+              <button type="button" class="secondary" id="ajout-contact">+ Ajouter un contact</button>
+            </div>
+            <div class="champ large">
+              <label for="presentation_texte">Présentation de la structure</label>
+              <textarea id="presentation_texte" name="presentation_texte" rows="4" placeholder="Quelques lignes pour le livret remis aux élèves : missions, métiers, valeurs."></textarea>
+              <p class="aide aide-reprise" id="aide-presentation" hidden>Reprise de votre présentation de l'an dernier : mettez-la à jour si besoin.</p>
+            </div>
+            <div class="champ large">
+              <label for="logo">Logo de la structure <span class="opt">(PNG, JPEG ou WEBP, 2 Mo maximum)</span></label>
+              <div class="depot-logo">
+                <img id="apercu-logo" alt="Aperçu du logo" hidden>
+                <input id="logo" type="file" accept="image/png,image/jpeg,image/webp">
+              </div>
+              <p class="aide" id="aide-logo">Il figurera sur le livret remis aux élèves et sur la signalétique de votre atelier.</p>
+            </div>
+          </div>
+        </section>
 
-        <h4>Logistique</h4>
-        <div class="inline-form" style="margin-bottom:12px">
-          <div><label>Barnum ?</label><select name="venue_avec_barnum"><option value="false">Non</option><option value="true">Oui</option></select></div>
-          <div><label>Tables</label><input name="nb_tables" type="number" min="0"></div>
-          <div><label>Chaises</label><input name="nb_chaises" type="number" min="0"></div>
-          <div><label>Électricité ?</label><select name="electricite_necessaire"><option value="false">Non</option><option value="true">Oui</option></select></div>
-        </div>
-        <div style="margin-bottom:12px">
-          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Besoins particuliers (dimension, sol...)</label>
-          <input name="contraintes_emplacement" style="width:100%">
-        </div>
+        <section class="rc-section" data-pour="atelier">
+          <h2><span class="num">3</span>Votre atelier</h2>
+          <p class="rc-intro">Chaque atelier dure 15 minutes et accueille des équipes de 6 à 8 élèves, notées sur leurs résultats et leur comportement.</p>
+          <div class="grille">
+            <div class="champ">
+              <label for="type_atelier">Type d'atelier</label>
+              <select id="type_atelier" name="type_atelier">
+                <option value="">Choisir...</option>
+                <option>Sportif</option>
+                <option>Réflexion / quiz</option>
+                <option>Technique / savoir-faire</option>
+                <option>Ludique</option>
+                <option>Mémoire et histoire</option>
+                <option>Premiers secours</option>
+                <option>Découverte des métiers</option>
+                <option>Autre</option>
+              </select>
+            </div>
+            <div class="champ">
+              <label for="capacite_equipes">Équipes en même temps</label>
+              <input id="capacite_equipes" name="capacite_equipes" type="number" min="1" value="2">
+              <p class="aide">Au moins 2 équipes souhaitées.</p>
+            </div>
+            <div class="champ large">
+              <label for="descriptif_atelier">Description de l'atelier</label>
+              <textarea id="descriptif_atelier" name="descriptif_atelier" rows="3" placeholder="Déroulé, ce que font les élèves, comment vous les notez."></textarea>
+            </div>
+          </div>
 
-        <h4>Autres possibilités</h4>
-        <div class="inline-form" style="margin-bottom:12px">
-          <div><label>Possibilité de mécénat ?</label><select name="finance_aussi"><option value="false">Non</option><option value="true">Oui</option></select></div>
-          <div><label>Goodies pour les participants ?</label><select name="fournit_goodies"><option value="false">Non</option><option value="true">Oui</option></select></div>
-        </div>
-        <div style="margin-bottom:12px">
-          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Une autorité de votre organisme à inviter ?</label>
-          <input name="autorite_a_inviter_nom" style="width:100%" placeholder="Nom et fonction">
-        </div>
-        <div style="margin-bottom:12px">
-          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Contact presse de votre structure</label>
-          <input name="contact_presse" style="width:100%">
-        </div>
-        <div style="margin-bottom:12px">
-          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Souhaitez-vous proposer des défis (fil rouge) ?</label>
-          <textarea name="defis_proposes" rows="2" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
-        </div>
-        <div style="margin-bottom:12px">
-          <label style="font-size:0.85rem;color:var(--muted);display:block;margin-bottom:3px">Précisions, commentaires</label>
-          <textarea name="notes" rows="2" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.9rem"></textarea>
-        </div>
+          <h2 style="font-size:1.1rem;margin-top:4px">Logistique</h2>
+          <div class="grille">
+            <div class="champ">
+              <label for="venue_avec_barnum">Vous venez avec un barnum ?</label>
+              <select id="venue_avec_barnum" name="venue_avec_barnum"><option value="false">Non</option><option value="true">Oui</option></select>
+            </div>
+            <div class="champ">
+              <label for="electricite_necessaire">Besoin d'électricité ?</label>
+              <select id="electricite_necessaire" name="electricite_necessaire"><option value="false">Non</option><option value="true">Oui</option></select>
+            </div>
+            <div class="champ">
+              <label for="nb_tables">Tables</label>
+              <input id="nb_tables" name="nb_tables" type="number" min="0" placeholder="0">
+            </div>
+            <div class="champ">
+              <label for="nb_chaises">Chaises</label>
+              <input id="nb_chaises" name="nb_chaises" type="number" min="0" placeholder="0">
+            </div>
+            <div class="champ large">
+              <label for="contraintes_emplacement">Besoins particuliers <span class="opt">(dimension, sol, véhicule...)</span></label>
+              <input id="contraintes_emplacement" name="contraintes_emplacement">
+            </div>
+          </div>
+        </section>
 
-        <button type="submit">Envoyer ma candidature</button>
+        <section class="rc-section" data-pour="mecenat" hidden>
+          <h2><span class="num">4</span>Votre soutien</h2>
+          <p class="rc-intro">L'association porteuse du Rallye peut délivrer un reçu fiscal au titre du mécénat.</p>
+          <div class="champ">
+            <span class="lbl">Nature du soutien <span class="opt">(plusieurs choix possibles)</span></span>
+            <div class="cases" id="mecenat_nature">
+              <label><input type="checkbox" value="mecenat_financier"> Mécénat financier</label>
+              <label><input type="checkbox" value="goodies"> Goodies pour les participants</label>
+              <label><input type="checkbox" value="materiel"> Soutien matériel</label>
+              <label><input type="checkbox" value="logistique"> Logistique</label>
+              <label><input type="checkbox" value="nourriture"> Nourriture (goûters, repas des organisateurs...)</label>
+            </div>
+          </div>
+          <div class="grille">
+            <div class="champ" id="bloc-montant" hidden>
+              <label for="mecenat_montant_envisage">Montant envisagé <span class="opt">(EUR, facultatif)</span></label>
+              <input id="mecenat_montant_envisage" name="mecenat_montant_envisage" type="number" min="0" step="1">
+            </div>
+            <div class="champ large">
+              <label for="mecenat_precisions">Précisions sur votre soutien</label>
+              <textarea id="mecenat_precisions" name="mecenat_precisions" rows="2" placeholder="Ex. : 200 casquettes, goûter des participants, besoin d'un reçu fiscal..."></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="rc-section">
+          <h2><span class="num">5</span>Pour aller plus loin</h2>
+          <p class="rc-intro">Tout est facultatif ici.</p>
+          <div class="champ" data-pour="partenaire-seul">
+            <label for="fournit_goodies">Des goodies pour les participants ?</label>
+            <select id="fournit_goodies" name="fournit_goodies"><option value="false">Non</option><option value="true">Oui</option></select>
+          </div>
+          <div class="champ">
+            <span class="lbl">Autorités de votre organisme à inviter</span>
+            <div id="autorites"></div>
+            <button type="button" class="secondary" id="ajout-autorite">+ Ajouter une autorité</button>
+          </div>
+          <div class="grille">
+            <div class="champ">
+              <label for="contact_presse">Contact presse de votre structure</label>
+              <input id="contact_presse" name="contact_presse" placeholder="Nom, email ou téléphone">
+            </div>
+            <div class="champ">
+              <label for="contact_presse_global">Contact presse global <span class="opt">(s'il y en a)</span></label>
+              <input id="contact_presse_global" name="contact_presse_global" placeholder="Service de presse national ou régional">
+            </div>
+          </div>
+          <div class="champ" data-pour="atelier">
+            <label for="defis_proposes">Proposer un défi du fil rouge</label>
+            <p class="aide" style="margin:0 0 8px">
+              Le Rallye ne se résume pas à une journée. Tout au long de l'année scolaire, les classes
+              (notamment les Classes de Défense) relèvent des défis en autonomie sur la plateforme
+              <a href="https://defi.dmd82.fr" target="_blank" rel="noopener">defi.dmd82.fr</a> et gagnent des
+              points à chaque action documentée. Vous pouvez leur proposer une action à réaliser, une
+              rencontre, une visite, une réflexion ou une production en lien avec votre structure.
+            </p>
+            <textarea id="defis_proposes" name="defis_proposes" rows="3" placeholder="Ex. : visiter notre centre et en faire un compte rendu, interviewer un de nos personnels, réaliser une affiche sur nos missions..."></textarea>
+          </div>
+          <div class="champ">
+            <label for="notes">Précisions, commentaires</label>
+            <textarea id="notes" name="notes" rows="2"></textarea>
+          </div>
+        </section>
+
+        <div class="rc-envoi">
+          <p>Vos réponses servent uniquement à organiser le Rallye Citoyen.</p>
+          <button type="submit" id="btn-envoyer">Envoyer ma participation</button>
+        </div>
+        <p id="erreur" role="alert" hidden></p>
       </form>
     </div>
-    <div class="card" id="confirmation-card" style="display:none">
-      <p>Merci ! Votre candidature a bien été transmise, l'équipe organisatrice reviendra vers vous.</p>
-    </div>
+    <section class="rc-section" id="confirmation-card" hidden tabindex="-1">
+      <div class="coche" aria-hidden="true">&#10003;</div>
+      <h2>Votre participation est bien enregistrée</h2>
+      <p class="rc-intro" id="conf-mail"></p>
+      <dl class="recap" id="recap"></dl>
+      <p class="rc-intro" style="margin-top:16px">Une correction à faire ? Renvoyez simplement le formulaire : l'envoi le plus récent fait foi.</p>
+    </section>
   </main>
 
   <script src="assets/app.js"></script>
   <script>
-    document.getElementById('form-candidature').addEventListener('submit', async e => {
+    const form = document.getElementById('form-participation');
+
+    // Affiche les blocs atelier et/ou mécénat selon le type choisi.
+    function majSections() {
+      const type = form.querySelector('input[name="type_participation"]:checked').value;
+      const atelier = type !== 'mecene';
+      const mecenat = type !== 'partenaire';
+      form.querySelectorAll('[data-pour="atelier"]').forEach(el => { el.hidden = !atelier; });
+      form.querySelectorAll('[data-pour="mecenat"]').forEach(el => { el.hidden = !mecenat; });
+      form.querySelectorAll('[data-pour="partenaire-seul"]').forEach(el => { el.hidden = mecenat; });
+    }
+    // Liste déroulante des structures déjà partenaires ; la saisie libre reste possible.
+    (async function chargerStructures() {
+      try {
+        const res = await apiGet('public.partenaires.structures');
+        if (!res.success || !res.data || !Array.isArray(res.data.structures)) return;
+        const dl = document.getElementById('structures-existantes');
+        res.data.structures.forEach(s => {
+          const o = document.createElement('option'); o.value = s.nom; dl.appendChild(o);
+          connues[s.nom.trim().toLowerCase()] = s;
+        });
+      } catch (err) { /* sans liste, le champ reste en saisie libre */ }
+    })();
+
+    // Structure choisie dans la liste : son type est rempli automatiquement
+    // (modifiable). Une structure nouvelle laisse le choix libre.
+    // Même principe pour la présentation : reprise de la dernière édition,
+    // modifiable ; un texte déjà saisi à la main n'est jamais écrasé.
+    const connues = {};
+    const champNom = document.getElementById('nom_entite');
+    const champType = document.getElementById('typologie');
+    const champPres = document.getElementById('presentation_texte');
+    const aidePres = document.getElementById('aide-presentation');
+    let typeAuto = false, presAuto = '';
+    champNom.addEventListener('input', () => {
+      const s = connues[champNom.value.trim().toLowerCase()];
+      if (s && s.typologie) { champType.value = s.typologie; typeAuto = true; }
+      else if (typeAuto) { champType.value = ''; typeAuto = false; }
+      const libre = champPres.value.trim() === '' || champPres.value === presAuto;
+      if (libre) {
+        presAuto = s && s.presentation ? s.presentation : '';
+        champPres.value = presAuto;
+        aidePres.hidden = !presAuto;
+      }
+    });
+    champType.addEventListener('change', () => { typeAuto = false; });
+    champPres.addEventListener('input', () => { if (champPres.value !== presAuto) aidePres.hidden = true; });
+
+    form.querySelectorAll('input[name="type_participation"]').forEach(r => r.addEventListener('change', majSections));
+    const casesNature = document.querySelectorAll('#mecenat_nature input');
+    casesNature.forEach(c => c.addEventListener('change', () => {
+      document.getElementById('bloc-montant').hidden = !document.querySelector('#mecenat_nature input[value="mecenat_financier"]').checked;
+    }));
+    majSections();
+
+    // Lignes répétables (autorités, contacts supplémentaires) : bouton "+" pour en ajouter.
+    function repeteur(zoneId, boutonId, champs, libelleRetirer) {
+      const zone = document.getElementById(zoneId);
+      let n = 0;
+      function ajouter() {
+        n++;
+        const ligne = document.createElement('div');
+        ligne.className = 'repete';
+        ligne.style.gridTemplateColumns = 'repeat(' + champs.length + ', 1fr) auto';
+        champs.forEach(c => {
+          const d = document.createElement('div');
+          const l = document.createElement('label'); l.textContent = c.label; l.htmlFor = zoneId + '-' + c.cle + '-' + n;
+          const i = document.createElement('input'); i.id = l.htmlFor; i.dataset.cle = c.cle; i.placeholder = c.ph || '';
+          if (c.type) i.type = c.type;
+          d.append(l, i); ligne.appendChild(d);
+        });
+        const btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'secondary retirer'; btn.textContent = 'Retirer';
+        btn.setAttribute('aria-label', libelleRetirer);
+        btn.addEventListener('click', () => { ligne.remove(); if (!zone.children.length) ajouter(); });
+        ligne.appendChild(btn);
+        zone.appendChild(ligne);
+      }
+      document.getElementById(boutonId).addEventListener('click', ajouter);
+      ajouter();
+      // Renvoie les lignes remplies : [{cle: valeur}], sans ";" (séparateur de stockage).
+      return function lire() {
+        const out = [];
+        zone.querySelectorAll('.repete').forEach(l => {
+          const o = {}; let rempli = false;
+          l.querySelectorAll('input').forEach(i => { o[i.dataset.cle] = i.value.replace(/;/g, ',').trim(); if (o[i.dataset.cle]) rempli = true; });
+          if (rempli) out.push(o);
+        });
+        return out;
+      };
+    }
+    const lireAutorites = repeteur('autorites', 'ajout-autorite', [
+      { cle: 'nom', label: 'Nom Prénom', ph: 'Ex. : Colonel Jean Dupont' },
+      { cle: 'contact', label: 'Contact', ph: 'Email ou téléphone' }
+    ], 'Retirer cette autorité');
+    const lireContacts = repeteur('contacts-sup', 'ajout-contact', [
+      { cle: 'nom', label: 'Nom Prénom' },
+      { cle: 'email', label: 'Email', type: 'email' },
+      { cle: 'tel', label: 'Téléphone', type: 'tel' }
+    ], 'Retirer ce contact');
+
+    // Logo : contrôle du type et du poids avant envoi, aperçu, lecture en base64.
+    const champLogo = document.getElementById('logo');
+    const aideLogo = document.getElementById('aide-logo');
+    const aideLogoTexte = aideLogo.textContent;
+    let logoData = null;
+    champLogo.addEventListener('change', () => {
+      logoData = null;
+      const apercu = document.getElementById('apercu-logo');
+      apercu.hidden = true; aideLogo.classList.remove('erreur'); aideLogo.textContent = aideLogoTexte;
+      const f = champLogo.files[0];
+      if (!f) return;
+      if (!/^image\/(png|jpeg|webp)$/.test(f.type)) { aideLogo.textContent = 'Format non accepté : choisissez un PNG, un JPEG ou un WEBP.'; aideLogo.classList.add('erreur'); champLogo.value = ''; return; }
+      if (f.size > 2 * 1024 * 1024) { aideLogo.textContent = 'Fichier trop lourd (2 Mo maximum).'; aideLogo.classList.add('erreur'); champLogo.value = ''; return; }
+      const lecteur = new FileReader();
+      lecteur.onload = () => { logoData = { nom: f.name, data: lecteur.result }; apercu.src = lecteur.result; apercu.hidden = false; };
+      lecteur.readAsDataURL(f);
+    });
+
+    // Récapitulatif affiché après l'envoi (construit en texte, jamais en HTML).
+    const LIBELLES = {
+      type_participation: 'Participation', nom_entite: 'Structure', typologie: 'Type de structure', contact_nom: 'Votre nom',
+      contact_email: 'Votre email', contacts_supplementaires: 'Contacts supplémentaires', presentation_texte: 'Présentation',
+      type_atelier: "Type d'atelier", capacite_equipes: 'Équipes en même temps', descriptif_atelier: "Description de l'atelier",
+      venue_avec_barnum: 'Barnum', electricite_necessaire: 'Électricité', nb_tables: 'Tables', nb_chaises: 'Chaises',
+      contraintes_emplacement: 'Besoins particuliers', mecenat_nature: 'Soutien', mecenat_montant_envisage: 'Montant envisagé (EUR)',
+      mecenat_precisions: 'Précisions sur le soutien', fournit_goodies: 'Goodies', autorite_a_inviter_nom: 'Autorités à inviter',
+      contact_presse: 'Contact presse', contact_presse_global: 'Contact presse global', defis_proposes: 'Défi proposé', notes: 'Commentaires'
+    };
+    const VALEURS = {
+      partenaire: 'Partenaire', partenaire_mecene: 'Partenaire et mécène', mecene: 'Mécène', true: 'Oui', false: 'Non',
+      mecenat_financier: 'mécénat financier', goodies: 'goodies', materiel: 'soutien matériel', logistique: 'logistique', nourriture: 'nourriture'
+    };
+    function afficherRecap(payload, data) {
+      const dl = document.getElementById('recap');
+      dl.textContent = '';
+      Object.keys(LIBELLES).forEach(k => {
+        let v = payload[k];
+        if (v === undefined || v === null || String(v).trim() === '') return;
+        if (k === 'mecenat_nature') v = String(v).split(',').map(x => VALEURS[x] || x).join(', ');
+        else if (VALEURS[v] !== undefined && k !== 'nom_entite') v = VALEURS[v];
+        if (k === 'contacts_supplementaires') v = String(v).split(' ; ').map(c => c.split(' | ').filter(Boolean).join(', ')).join('\n');
+        if (k === 'autorite_a_inviter_nom') v = String(v).split(' ; ').join('\n');
+        const ligne = document.createElement('div');
+        const dt = document.createElement('dt'); dt.textContent = LIBELLES[k];
+        const dd = document.createElement('dd'); dd.textContent = v;
+        ligne.append(dt, dd); dl.appendChild(ligne);
+      });
+      if (logoData) {
+        const ligne = document.createElement('div');
+        const dt = document.createElement('dt'); dt.textContent = 'Logo';
+        const dd = document.createElement('dd'); dd.textContent = data && data.logo ? 'reçu' : 'non enregistré' + (data && data.logo_erreur ? ' (' + data.logo_erreur + ')' : '') + ' : vous pourrez nous l\'envoyer par mail';
+        ligne.append(dt, dd); dl.appendChild(ligne);
+      }
+      document.getElementById('conf-mail').textContent = data && data.mail_envoye
+        ? 'Un mail de confirmation avec ce récapitulatif vient de partir à ' + payload.contact_email + '. Pensez à vérifier vos indésirables.'
+        : 'Voici le récapitulatif de vos réponses. Conservez-le si besoin : le mail de confirmation n\'a pas pu partir.';
+    }
+
+    form.addEventListener('submit', async e => {
       e.preventDefault();
-      const payload = Object.fromEntries(new FormData(e.target).entries());
-      const res = await apiPost('public.partenaires.candidater', payload);
-      if (res.success) {
-        document.getElementById('form-card').style.display = 'none';
-        document.getElementById('confirmation-card').style.display = '';
-      } else {
-        alert('Erreur : ' + res.error.message);
+      const erreur = document.getElementById('erreur');
+      // Validation à la main (novalidate) pour un message clair en français.
+      const manque = [];
+      if (!champNom.value.trim()) manque.push('le nom de la structure');
+      if (!champType.value) manque.push('le type de structure');
+      const mail = document.getElementById('contact_email');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail.value.trim())) manque.push('une adresse email valide');
+      if (manque.length) {
+        erreur.textContent = 'Il manque ' + manque.join(', ') + '.';
+        erreur.hidden = false;
+        (manque[0].startsWith('le nom') ? champNom : manque[0].startsWith('le type') ? champType : mail).focus();
+        return;
+      }
+      const btn = document.getElementById('btn-envoyer');
+      erreur.hidden = true;
+      // On n'envoie que les champs visibles : un mécène seul n'envoie pas d'atelier.
+      const payload = {};
+      new FormData(form).forEach((v, k) => {
+        const el = form.elements[k];
+        const champ = el && el.closest ? el.closest('[hidden]') : null;
+        if (!champ) payload[k] = v;
+      });
+      // Les autorités partent dans les deux champs existants, dans le même ordre, séparées par " ; ".
+      const aut = lireAutorites().filter(a => a.nom);
+      payload.autorite_a_inviter_nom = aut.map(a => a.nom).join(' ; ');
+      payload.autorite_a_inviter_contact = aut.map(a => a.contact).join(' ; ');
+      // Contacts supplémentaires : "Nom | email | téléphone" séparés par " ; ".
+      if (!document.querySelector('[data-pour="mecenat"]').hidden) {
+        payload.mecenat_nature = Array.from(casesNature).filter(c => c.checked).map(c => c.value).join(',');
+      }
+      payload.contacts_supplementaires = lireContacts().map(c => [c.nom, c.email, c.tel].join(' | ')).join(' ; ');
+      if (logoData) payload.logo = logoData;
+      btn.disabled = true;
+      btn.textContent = 'Envoi en cours...';
+      try {
+        const res = await apiPost('public.partenaires.candidater', payload);
+        if (res.success) {
+          afficherRecap(payload, res.data);
+          document.getElementById('form-card').hidden = true;
+          const conf = document.getElementById('confirmation-card');
+          conf.hidden = false;
+          window.scrollTo({ top: conf.getBoundingClientRect().top + window.scrollY - 20 });
+          conf.focus({ preventScroll: true });
+        } else {
+          erreur.textContent = 'Envoi impossible : ' + (res.error && res.error.message ? res.error.message : 'erreur inconnue') + '. Merci de réessayer.';
+          erreur.hidden = false;
+        }
+      } catch (err) {
+        erreur.textContent = "Envoi impossible : vérifiez votre connexion puis réessayez.";
+        erreur.hidden = false;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Envoyer ma participation';
       }
     });
   </script>
