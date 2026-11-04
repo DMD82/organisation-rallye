@@ -84,6 +84,7 @@
     const FICHE = [
       { titre: 'Entité et contact', ouvert: true, champs: [
         ['contact_nom', 'Contact référent', 't'], ['contact_email', 'Email du contact', 'e'],
+        ['contacts_supplementaires', 'Contacts supplémentaires (Nom | email | tél ; ...)', 'a'],
         ['logo_url', 'Logo (lien Drive ou image)', 't'], ['numero_atelier', 'N° atelier', 't'],
         ['presentation_texte', 'Présentation de la structure', 'a'] ] },
       { titre: 'Atelier', champs: [
@@ -96,7 +97,7 @@
       { titre: 'Opportunités signalées par le partenaire', champs: [
         ['finance_aussi', 'Peut financer (mécénat)', 'b'], ['fournit_goodies', 'Fournit des goodies', 'b'],
         ['autorite_a_inviter_nom', 'Autorité à inviter', 't'], ['autorite_a_inviter_contact', "Contact de l'autorité", 't'],
-        ['contact_communication', 'Contact communication', 't'], ['contact_presse', 'Contact presse', 't'],
+        ['contact_communication', 'Contact communication', 't'], ['contact_presse', 'Contact presse', 't'], ['contact_presse_global', 'Contact presse global', 't'],
         ['souhaite_proposer_defis', 'Propose des défis', 'b'], ['defis_proposes', 'Défis proposés', 'a'] ] },
       { titre: 'Suivi', champs: [
         ['statut', 'Statut', 's'], ['retour_bilan', 'Retour après le rallye', 'a'], ['notes', 'Notes', 'a'] ] }
