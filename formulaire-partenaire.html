@@ -89,6 +89,10 @@
     #confirmation-card { text-align: center; padding: 40px 22px; }
     #confirmation-card h2 { justify-content: center; }
     .pot { position: absolute; left: -9999px; }
+    .case-seule { display: flex !important; gap: 8px; align-items: flex-start; font-weight: 400 !important; font-size: .9rem !important; margin: 4px 0 10px !important; cursor: pointer; }
+    .case-seule[hidden], [hidden] { display: none !important; }
+    .case-seule input { width: auto !important; margin-top: 3px; accent-color: var(--rc-marine); flex: none; }
+    .reprise-annee { display: flex; gap: 10px; align-items: center; background: #EEF6F1; color: var(--rc-vert); border-radius: 6px; padding: 8px 12px; font-size: .88rem; margin: 0 0 14px; }
     .depot-logo { display: flex; gap: 14px; align-items: center; padding: 12px; border: 1px dashed var(--rc-trait); border-radius: 8px; background: #FBFAF7; }
     .depot-logo img { width: 64px; height: 64px; object-fit: contain; background: #fff; border: 1px solid var(--rc-trait); border-radius: 6px; flex: none; }
     .depot-logo input { border: 0 !important; padding: 0 !important; background: transparent !important; }
@@ -179,6 +183,15 @@
               <button type="button" class="secondary" id="ajout-contact">+ Ajouter un contact</button>
             </div>
             <div class="champ large">
+              <span class="lbl">Autorités de votre structure à inviter <span class="opt">(facultatif)</span></span>
+              <label class="case-seule"><input type="checkbox" id="autorite-moi"> Je suis l'autorité à inviter</label>
+              <p class="aide" id="apercu-moi" hidden></p>
+              <div id="autorites"></div>
+              <button type="button" class="secondary" id="ajout-autorite">+ Ajouter une autorité</button>
+              <label class="case-seule" id="bloc-reprise" hidden><input type="checkbox" id="reprendre_contacts" checked>
+                Reprendre les autorités et contacts presse indiqués l'an dernier, pour les champs que je laisse vides</label>
+            </div>
+            <div class="champ large">
               <label for="presentation_texte">Présentation de la structure</label>
               <textarea id="presentation_texte" name="presentation_texte" rows="4" placeholder="Quelques lignes pour le livret remis aux élèves : missions, métiers, valeurs."></textarea>
               <p class="aide aide-reprise" id="aide-presentation" hidden>Reprise de votre présentation de l'an dernier : mettez-la à jour si besoin.</p>
@@ -196,6 +209,7 @@
 
         <section class="rc-section" data-pour="atelier">
           <h2><span class="num">3</span>Votre atelier</h2>
+          <p class="reprise-annee" id="aide-reprise-atelier" hidden></p>
           <p class="rc-intro">Chaque atelier dure 15 minutes et accueille des équipes de 6 à 8 élèves, notées sur leurs résultats et leur comportement.</p>
           <div class="grille">
             <div class="champ">
@@ -280,11 +294,6 @@
             <label for="fournit_goodies">Des goodies pour les participants ?</label>
             <select id="fournit_goodies" name="fournit_goodies"><option value="false">Non</option><option value="true">Oui</option></select>
           </div>
-          <div class="champ">
-            <span class="lbl">Autorités de votre organisme à inviter</span>
-            <div id="autorites"></div>
-            <button type="button" class="secondary" id="ajout-autorite">+ Ajouter une autorité</button>
-          </div>
           <div class="grille">
             <div class="champ">
               <label for="contact_presse">Contact presse de votre structure</label>
@@ -340,6 +349,9 @@
       form.querySelectorAll('[data-pour="atelier"]').forEach(el => { el.hidden = !atelier; });
       form.querySelectorAll('[data-pour="mecenat"]').forEach(el => { el.hidden = !mecenat; });
       form.querySelectorAll('[data-pour="partenaire-seul"]').forEach(el => { el.hidden = mecenat; });
+      // Numérotation continue des sections visibles (pas de trou quand une section est masquée).
+      let n = 0;
+      form.querySelectorAll('.rc-section > h2 .num').forEach(el => { if (!el.closest('[hidden]')) el.textContent = ++n; });
     }
     // Liste déroulante des structures déjà partenaires ; la saisie libre reste possible.
     (async function chargerStructures() {
@@ -354,29 +366,40 @@
       } catch (err) { /* sans liste, le champ reste en saisie libre */ }
     })();
 
-    // Structure choisie dans la liste : son type est rempli automatiquement
-    // (modifiable). Une structure nouvelle laisse le choix libre.
-    // Même principe pour la présentation : reprise de la dernière édition,
-    // modifiable ; un texte déjà saisi à la main n'est jamais écrasé.
+    // Structure choisie dans la liste : type de structure et réponses de l'an
+    // dernier (présentation, atelier, logistique, défi) remplis automatiquement,
+    // toujours modifiables. Un champ déjà modifié à la main n'est jamais écrasé.
     const connues = {};
     const champNom = document.getElementById('nom_entite');
     const champType = document.getElementById('typologie');
-    const champPres = document.getElementById('presentation_texte');
     const aidePres = document.getElementById('aide-presentation');
-    let typeAuto = false, presAuto = '';
-    champNom.addEventListener('input', () => {
+    const aideAtelier = document.getElementById('aide-reprise-atelier');
+    const CHAMPS_REPRIS = ['presentation_texte', 'type_atelier', 'capacite_equipes', 'descriptif_atelier',
+      'venue_avec_barnum', 'nb_tables', 'nb_chaises', 'electricite_necessaire', 'contraintes_emplacement', 'defis_proposes'];
+    const valeursAuto = {};           // champ -> valeur posée automatiquement
+    const valeursDefaut = {};         // valeur d'origine du champ (ex. "2", "false")
+    CHAMPS_REPRIS.concat(['typologie']).forEach(k => { const el = form.elements[k]; if (el) valeursDefaut[k] = el.value; });
+    function poser(k, v) {
+      const el = form.elements[k]; if (!el) return;
+      const libre = el.value === valeursDefaut[k] || el.value.trim() === '' || el.value === valeursAuto[k];
+      if (!libre) return;
+      el.value = v !== undefined ? v : valeursDefaut[k];
+      if (el.tagName === 'SELECT' && el.value === '' && v) el.value = valeursDefaut[k]; // valeur hors liste ignorée
+      valeursAuto[k] = el.value;
+    }
+    function appliquerStructure() {
       const s = connues[champNom.value.trim().toLowerCase()];
-      if (s && s.typologie) { champType.value = s.typologie; typeAuto = true; }
-      else if (typeAuto) { champType.value = ''; typeAuto = false; }
-      const libre = champPres.value.trim() === '' || champPres.value === presAuto;
-      if (libre) {
-        presAuto = s && s.presentation ? s.presentation : '';
-        champPres.value = presAuto;
-        aidePres.hidden = !presAuto;
-      }
-    });
-    champType.addEventListener('change', () => { typeAuto = false; });
-    champPres.addEventListener('input', () => { if (champPres.value !== presAuto) aidePres.hidden = true; });
+      poser('typologie', s && s.typologie ? s.typologie : undefined);
+      const prec = s && s.precedent ? s.precedent : {};
+      CHAMPS_REPRIS.forEach(k => poser(k, prec[k]));
+      aidePres.hidden = !prec.presentation_texte;
+      const nbAtelier = CHAMPS_REPRIS.filter(k => k !== 'presentation_texte' && prec[k]).length;
+      aideAtelier.hidden = !nbAtelier;
+      aideAtelier.textContent = nbAtelier ? "Vos réponses de " + (s.annee || "l'an dernier") + " sont reprises ci-dessous : vérifiez-les et modifiez ce qui change." : '';
+      document.getElementById('bloc-reprise').hidden = !(s && s.contacts_connus);
+    }
+    champNom.addEventListener('input', appliquerStructure);
+    champNom.addEventListener('change', appliquerStructure);
 
     form.querySelectorAll('input[name="type_participation"]').forEach(r => r.addEventListener('change', majSections));
     const casesNature = document.querySelectorAll('#mecenat_nature input');
@@ -425,6 +448,22 @@
       { cle: 'nom', label: 'Nom Prénom', ph: 'Ex. : Colonel Jean Dupont' },
       { cle: 'contact', label: 'Contact', ph: 'Email ou téléphone' }
     ], 'Retirer cette autorité');
+    // "Je suis l'autorité à inviter" : reprend le nom et l'email saisis plus haut.
+    const caseMoi = document.getElementById('autorite-moi');
+    const apercuMoi = document.getElementById('apercu-moi');
+    function majMoi() {
+      const nom = document.getElementById('contact_nom').value.trim();
+      const mail = document.getElementById('contact_email').value.trim();
+      apercuMoi.hidden = !caseMoi.checked;
+      apercuMoi.textContent = caseMoi.checked
+        ? (nom ? 'Vous serez invité(e) : ' + nom + (mail ? ' (' + mail + ')' : '') : 'Indiquez votre nom dans « Votre nom » ci-dessus.')
+        : '';
+      apercuMoi.classList.toggle('erreur', caseMoi.checked && !nom);
+    }
+    caseMoi.addEventListener('change', majMoi);
+    document.getElementById('contact_nom').addEventListener('input', majMoi);
+    document.getElementById('contact_email').addEventListener('input', majMoi);
+
     const lireContacts = repeteur('contacts-sup', 'ajout-contact', [
       { cle: 'nom', label: 'Nom Prénom' },
       { cle: 'email', label: 'Email', type: 'email' },
@@ -484,6 +523,18 @@
         const dd = document.createElement('dd'); dd.textContent = data && data.logo ? 'reçu' : 'non enregistré' + (data && data.logo_erreur ? ' (' + data.logo_erreur + ')' : '') + ' : vous pourrez nous l\'envoyer par mail';
         ligne.append(dt, dd); dl.appendChild(ligne);
       }
+      if (data && data.contacts_repris) {
+        const ligne = document.createElement('div');
+        const dt = document.createElement('dt'); dt.textContent = 'Autorités et contacts presse';
+        const dd = document.createElement('dd'); dd.textContent = "ceux indiqués l'an dernier sont conservés";
+        ligne.append(dt, dd); dl.appendChild(ligne);
+      }
+      if (data && data.a_verifier) {
+        const ligne = document.createElement('div');
+        const dt = document.createElement('dt'); dt.textContent = 'À noter';
+        const dd = document.createElement('dd'); dd.textContent = "Une fiche existe déjà pour votre structure avec un autre contact : l'équipe vérifiera vos réponses avant de les reporter.";
+        ligne.append(dt, dd); dl.appendChild(ligne);
+      }
       document.getElementById('conf-mail').textContent = data && data.mail_envoye
         ? 'Un mail de confirmation avec ce récapitulatif vient de partir à ' + payload.contact_email + '. Pensez à vérifier vos indésirables.'
         : 'Voici le récapitulatif de vos réponses. Conservez-le si besoin : le mail de confirmation n\'a pas pu partir.';
@@ -496,6 +547,7 @@
       const manque = [];
       if (!champNom.value.trim()) manque.push('le nom de la structure');
       if (!champType.value) manque.push('le type de structure');
+      if (caseMoi.checked && !document.getElementById('contact_nom').value.trim()) manque.push('votre nom (vous êtes l\'autorité à inviter)');
       const mail = document.getElementById('contact_email');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail.value.trim())) manque.push('une adresse email valide');
       if (manque.length) {
@@ -515,6 +567,9 @@
       });
       // Les autorités partent dans les deux champs existants, dans le même ordre, séparées par " ; ".
       const aut = lireAutorites().filter(a => a.nom);
+      const monNom = document.getElementById('contact_nom').value.replace(/;/g, ',').trim();
+      if (caseMoi.checked && monNom) aut.unshift({ nom: monNom, contact: document.getElementById('contact_email').value.trim() });
+      if (!document.getElementById('bloc-reprise').hidden) payload.reprendre_contacts = String(document.getElementById('reprendre_contacts').checked);
       payload.autorite_a_inviter_nom = aut.map(a => a.nom).join(' ; ');
       payload.autorite_a_inviter_contact = aut.map(a => a.contact).join(' ; ');
       // Contacts supplémentaires : "Nom | email | téléphone" séparés par " ; ".
