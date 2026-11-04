@@ -30,10 +30,21 @@ function requireAuth() {
   }
 }
 
+// Lecture : envoyée en POST avec le jeton dans le corps (jamais dans l'URL).
+// Le serveur refuse toute lecture sans session valide, sauf la courte liste
+// LECTURES_PUBLIQUES de Code.gs (formulaire partenaire).
 async function apiGet(action, params) {
-  const qs = new URLSearchParams(Object.assign({ action: action }, params || {})).toString();
-  const resp = await fetch(API_URL + '?' + qs, { method: 'GET' });
-  return resp.json();
+  const resp = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // évite le préflight CORS
+    body: JSON.stringify({ action: action, token: getToken(), payload: params || {}, lecture: true })
+  });
+  const data = await resp.json();
+  if (!data.success && data.error && data.error.code === 'AUTH_REQUIRED' && getToken() !== null) {
+    clearSession();
+    window.location.href = 'index.html';
+  }
+  return data;
 }
 
 async function apiPost(action, payload) {
