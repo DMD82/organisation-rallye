@@ -96,7 +96,9 @@
         ['logo_url', 'Logo (lien Drive ou image)', 't'],
         ['presentation_texte', 'Présentation de la structure', 'a'] ] },
       // Les ateliers (un par carte, avec leur logistique) se gèrent dans la section "Ateliers" ci-dessous.
-      { titre: 'Autres besoins logistiques', champs: [['besoins_logistiques', 'Autres besoins', 'a']] },
+      { titre: 'Logistique commune à tous les ateliers', ouvert: true, champs: [
+        ['venue_avec_barnum', 'Barnum', 'b'], ['electricite_necessaire', 'Électricité', 'b'], ['nb_tables', 'Tables', 'n'], ['nb_chaises', 'Chaises', 'n'],
+        ['contraintes_emplacement', "Besoins particuliers (emplacement, contraintes)", 'a'], ['besoins_logistiques', 'Autres besoins', 'a'] ] },
       { titre: 'Opportunités signalées par le partenaire', champs: [
         ['finance_aussi', 'Peut financer (mécénat)', 'b'], ['fournit_goodies', 'Fournit des goodies', 'b'],
         ['autorite_a_inviter_nom', 'Autorité à inviter', 't'], ['autorite_a_inviter_contact', "Contact de l'autorité", 't'],
@@ -296,6 +298,7 @@
         c.dataset.id = v.id || '';
         const mk = (tag, cle, props) => { const e = el(tag, {}); e.dataset.cle = cle; Object.assign(e, props || {}); return e; };
         const sel = (cle, val) => { const e = mk('select', cle); [['false', 'Non'], ['true', 'Oui']].forEach(([x, t]) => e.append(el('option', { value: x, text: t }))); e.value = estVrai(val) ? 'true' : 'false'; return e; };
+        const propre = sel('logistique_propre', v.logistique_propre);
         const type = mk('select', 'type_atelier');
         type.append(el('option', { value: '', text: '' }));
         TYPES_ATELIER.forEach(t => type.append(el('option', { text: t })));
@@ -305,11 +308,16 @@
           champ("Nom de l'atelier", mk('input', 'nom', { value: v.nom || '' })),
           champ("Type d'atelier", type),
           champ('Équipes simultanées', mk('input', 'capacite_equipes', { value: v.capacite_equipes || '' })),
-          champ('Barnum', sel('venue_avec_barnum', v.venue_avec_barnum)), champ('Électricité', sel('electricite_necessaire', v.electricite_necessaire)),
-          champ('Tables', mk('input', 'nb_tables', { value: v.nb_tables || '' })), champ('Chaises', mk('input', 'nb_chaises', { value: v.nb_chaises || '' })));
+          champ('Logistique différente de celle de la structure ?', propre));
         const desc = mk('textarea', 'descriptif_atelier', { rows: 3, value: v.descriptif_atelier || '' });
         const cont = mk('textarea', 'contraintes_emplacement', { rows: 2, value: v.contraintes_emplacement || '' });
-        c.append(grille, champ("Descriptif de l'atelier", desc, true), champ("Contraintes d'emplacement", cont, true),
+        const logi = el('div', {},
+          el('div', { class: 'fiche-grid' }, champ('Barnum', sel('venue_avec_barnum', v.venue_avec_barnum)), champ('Électricité', sel('electricite_necessaire', v.electricite_necessaire)),
+            champ('Tables', mk('input', 'nb_tables', { value: v.nb_tables || '' })), champ('Chaises', mk('input', 'nb_chaises', { value: v.nb_chaises || '' }))),
+          champ("Contraintes d'emplacement", cont, true));
+        logi.hidden = !estVrai(v.logistique_propre);
+        propre.addEventListener('change', () => { logi.hidden = propre.value !== 'true'; });
+        c.append(grille, champ("Descriptif de l'atelier", desc, true), logi,
           el('button', { type: 'button', class: 'secondary', text: 'Retirer cet atelier', onclick: () => c.remove() }));
         zone.append(c);
       };
