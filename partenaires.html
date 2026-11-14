@@ -90,15 +90,10 @@
       { titre: 'Entité et contact', ouvert: true, champs: [
         ['contact_nom', 'Contact référent', 't'], ['contact_email', 'Email du contact', 'e'],
         ['contacts_supplementaires', 'Contacts supplémentaires (Nom | email | tél ; ...)', 'a'],
-        ['logo_url', 'Logo (lien Drive ou image)', 't'], ['numero_atelier', 'N° atelier', 't'],
+        ['logo_url', 'Logo (lien Drive ou image)', 't'],
         ['presentation_texte', 'Présentation de la structure', 'a'] ] },
-      { titre: 'Atelier', champs: [
-        ['type_atelier', "Type d'atelier", 't'], ['capacite_equipes', 'Capacité (équipes simultanées)', 'n'],
-        ['descriptif_atelier', "Descriptif de l'atelier", 'a'] ] },
-      { titre: 'Logistique', champs: [
-        ['venue_avec_barnum', 'Vient avec un barnum', 'b'], ['nb_tables', 'Tables', 'n'],
-        ['nb_chaises', 'Chaises', 'n'], ['electricite_necessaire', 'Électricité', 'b'],
-        ['contraintes_emplacement', "Contraintes d'emplacement", 'a'], ['besoins_logistiques', 'Autres besoins', 'a'] ] },
+      // Les ateliers (un par carte, avec leur logistique) se gèrent dans la section "Ateliers" ci-dessous.
+      { titre: 'Autres besoins logistiques', champs: [['besoins_logistiques', 'Autres besoins', 'a']] },
       { titre: 'Opportunités signalées par le partenaire', champs: [
         ['finance_aussi', 'Peut financer (mécénat)', 'b'], ['fournit_goodies', 'Fournit des goodies', 'b'],
         ['autorite_a_inviter_nom', 'Autorité à inviter', 't'], ['autorite_a_inviter_contact', "Contact de l'autorité", 't'],
@@ -265,6 +260,58 @@
 
     function fermerFiche() { const o = document.getElementById('fiche-overlay'); if (o) o.remove(); }
 
+    const TYPES_ATELIER = ['Sportif', 'Réflexion / quiz', 'Technique / savoir-faire', 'Ludique', 'Mémoire et histoire', 'Premiers secours', 'Découverte des métiers', 'Autre'];
+
+    // Section "Ateliers" de la fiche : une carte par atelier, enregistrée à part (ateliers.save).
+    function sectionAteliers(p) {
+      const det = el('details', { class: 'fiche-section', open: 'open' }, el('summary', { text: 'Ateliers' }));
+      const zone = el('div', {});
+      const msg = el('span', { class: 'hint' });
+      const champ = (lib, noeud, large) => { const d = el('div', { class: large ? 'fiche-full' : '' }, el('label', { text: lib }), noeud); return d; };
+      const carte = v => {
+        v = v || {};
+        const c = el('div', { class: 'fiche-section', style: 'padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:6px' });
+        c.dataset.id = v.id || '';
+        const mk = (tag, cle, props) => { const e = el(tag, {}); e.dataset.cle = cle; Object.assign(e, props || {}); return e; };
+        const sel = (cle, val) => { const e = mk('select', cle); [['false', 'Non'], ['true', 'Oui']].forEach(([x, t]) => e.append(el('option', { value: x, text: t }))); e.value = estVrai(val) ? 'true' : 'false'; return e; };
+        const type = mk('select', 'type_atelier');
+        type.append(el('option', { value: '', text: '' }));
+        TYPES_ATELIER.forEach(t => type.append(el('option', { text: t })));
+        type.value = TYPES_ATELIER.indexOf(v.type_atelier) !== -1 ? v.type_atelier : '';
+        const grille = el('div', { class: 'fiche-grid' },
+          champ('N° atelier', mk('input', 'numero', { value: v.numero || '' })),
+          champ("Nom de l'atelier", mk('input', 'nom', { value: v.nom || '' })),
+          champ("Type d'atelier", type),
+          champ('Équipes simultanées', mk('input', 'capacite_equipes', { value: v.capacite_equipes || '' })),
+          champ('Barnum', sel('venue_avec_barnum', v.venue_avec_barnum)), champ('Électricité', sel('electricite_necessaire', v.electricite_necessaire)),
+          champ('Tables', mk('input', 'nb_tables', { value: v.nb_tables || '' })), champ('Chaises', mk('input', 'nb_chaises', { value: v.nb_chaises || '' })));
+        const desc = mk('textarea', 'descriptif_atelier', { rows: 3, value: v.descriptif_atelier || '' });
+        const cont = mk('textarea', 'contraintes_emplacement', { rows: 2, value: v.contraintes_emplacement || '' });
+        c.append(grille, champ("Descriptif de l'atelier", desc, true), champ("Contraintes d'emplacement", cont, true),
+          el('button', { type: 'button', class: 'secondary', text: 'Retirer cet atelier', onclick: () => c.remove() }));
+        zone.append(c);
+      };
+      const lire = () => Array.from(zone.children).map(c => {
+        const a = { id: c.dataset.id || undefined };
+        c.querySelectorAll('[data-cle]').forEach(e => { a[e.dataset.cle] = e.value; });
+        return a;
+      });
+      apiGet('ateliers.list', { partenariat_id: p.id }).then(res => {
+        zone.textContent = '';
+        (res.success ? res.data : []).forEach(carte);
+        if (!zone.children.length) msg.textContent = 'Aucun atelier enregistré.';
+      });
+      const bouton = el('button', { type: 'button', text: 'Enregistrer les ateliers', onclick: async () => {
+        bouton.disabled = true; msg.textContent = 'Enregistrement...';
+        const res = await apiPost('ateliers.save', { partenariat_id: p.id, ateliers: lire() });
+        bouton.disabled = false;
+        if (res.success) { fermerFiche(); loadPartenariats(); } else msg.textContent = 'Erreur : ' + res.error.message;
+      } });
+      det.append(zone, el('div', { style: 'display:flex;gap:8px;align-items:center;margin-top:8px' },
+        el('button', { type: 'button', class: 'secondary', text: '+ Ajouter un atelier', onclick: () => { msg.textContent = ''; carte(); } }), bouton, msg));
+      return det;
+    }
+
     function ouvrirFiche(p) {
       fermerFiche();
       const form = el('form', {});
@@ -280,6 +327,7 @@
         det.append(grille, pleins);
         form.append(det);
       });
+      form.insertBefore(sectionAteliers(p), form.children[1] || null);
       const msg = el('span', { class: 'hint' });
       form.append(el('div', { style: 'display:flex;gap:8px;align-items:center;margin-top:12px' },
         el('button', { type: 'submit', text: 'Enregistrer' }),
