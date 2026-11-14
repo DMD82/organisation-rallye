@@ -38,7 +38,9 @@
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <h3 style="margin:0">Partenaires de l'édition <span class="hint" id="compteur"></span></h3>
+        <h3 style="margin:0">Partenaires de l'édition
+          <select id="choix-edition" aria-label="Édition affichée" style="margin:0 4px"></select>
+          <span class="hint" id="compteur"></span></h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="secondary" id="btn-reprise" title="Recopie les partenaires d'une édition passée, à solliciter de nouveau">Reprendre une édition passée</button>
           <button class="secondary" id="btn-sync" title="Récupère les nouvelles réponses du formulaire Google">Récupérer le formulaire Google</button>
@@ -79,6 +81,7 @@
 
     let partenariatsData = [];
     let editionActiveId = null;
+    let editionAfficheeId = null;   // édition consultée ; seule l'édition active est modifiable en bloc
 
     const STATUTS = [
       ['a_solliciter', 'À solliciter'], ['sollicite', 'Sollicité'],
@@ -139,9 +142,28 @@
         return;
       }
       editionActiveId = editionRes.data.id;
+      editionAfficheeId = editionActiveId;
+      await remplirChoixEdition();
       banner.append(el('div', { class: 'hint', text: 'Édition active' }),
         el('h2', { style: 'margin:4px 0', text: (editionRes.data.annee || '') + ' - ' + (editionRes.data.theme || '') }));
       loadPartenariats();
+    }
+
+    // Sélecteur d'édition : l'active par défaut, les autres en consultation.
+    async function remplirChoixEdition() {
+      const res = await apiGet('generale.editions.list');
+      const sel = document.getElementById('choix-edition');
+      sel.textContent = '';
+      const editions = (res.success ? res.data : []).slice().sort((a, b) => Number(b.annee) - Number(a.annee));
+      editions.forEach(e => sel.append(el('option', { value: e.id, text: e.annee + (e.id === editionActiveId ? ' (active)' : '') })));
+      sel.value = editionActiveId;
+      sel.addEventListener('change', () => {
+        editionAfficheeId = sel.value;
+        const consultation = editionAfficheeId !== editionActiveId;
+        ['btn-ajout', 'btn-import-partenaires', 'btn-sync', 'btn-reprise'].forEach(id => { document.getElementById(id).disabled = consultation; });
+        document.getElementById('sync-message').textContent = consultation ? 'Édition en consultation : les ajouts, imports et reprises se font sur l\'édition active.' : '';
+        loadPartenariats();
+      });
     }
 
     // Sans trace de réponse : fiche encore "à solliciter" et jamais modifiée.
@@ -240,7 +262,7 @@
     }
 
     async function loadPartenariats() {
-      const res = await apiGet('partenaires.list', { edition_id: editionActiveId });
+      const res = await apiGet('partenaires.list', { edition_id: editionAfficheeId });
       partenariatsData = (res.success && res.data) ? res.data : [];
       afficher();
     }
