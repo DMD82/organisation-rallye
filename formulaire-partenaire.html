@@ -102,6 +102,8 @@
     .recap dt { color: var(--rc-doux); margin: 0; }
     .recap dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
     @media (max-width: 520px) { .recap div { grid-template-columns: 1fr; gap: 2px; } }
+    .carte-atelier { border: 1px solid var(--rc-trait); border-radius: 8px; padding: 14px 14px 2px; margin-bottom: 12px; background: #FBFAF7; }
+    .carte-atelier > header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-family: var(--rc-titre); font-size: 1.05rem; color: var(--rc-marine); }
     .coche { width: 54px; height: 54px; border-radius: 50%; background: var(--rc-vert); color: #fff; display: grid; place-items: center; font-size: 1.8rem; margin: 0 auto 12px; }
   </style>
 </head>
@@ -213,6 +215,10 @@
           <p class="reprise-annee" id="aide-reprise-atelier" hidden></p>
           <p class="rc-intro">Chaque atelier dure 15 minutes et accueille des équipes de 6 à 8 élèves, notées sur leurs résultats et leur comportement.</p>
           <div class="grille">
+            <div class="champ large">
+              <label for="nom_atelier">Nom de l'atelier <span class="opt">(facultatif)</span></label>
+              <input id="nom_atelier" name="nom_atelier" maxlength="300" placeholder="Ex. : Tir laser">
+            </div>
             <div class="champ">
               <label for="type_atelier">Type d'atelier</label>
               <select id="type_atelier" name="type_atelier">
@@ -260,6 +266,13 @@
               <label for="contraintes_emplacement">Besoins particuliers <span class="opt">(dimension, sol, véhicule...)</span></label>
               <input id="contraintes_emplacement" name="contraintes_emplacement">
             </div>
+          </div>
+        
+          <div class="champ large" id="bloc-ateliers-supp" style="margin-top:8px">
+            <span class="lbl">Vous animez plusieurs ateliers ? <span class="opt">(facultatif)</span></span>
+            <p class="aide" style="margin:0 0 10px">Décrivez ici chaque atelier supplémentaire : il aura sa propre fiche, son numéro et sa logistique.</p>
+            <div id="ateliers-supp"></div>
+            <button type="button" class="secondary" id="ajout-atelier">+ Ajouter un autre atelier</button>
           </div>
         </section>
 
@@ -375,7 +388,7 @@
     const champType = document.getElementById('typologie');
     const aidePres = document.getElementById('aide-presentation');
     const aideAtelier = document.getElementById('aide-reprise-atelier');
-    const CHAMPS_REPRIS = ['presentation_texte', 'type_atelier', 'capacite_equipes', 'descriptif_atelier',
+    const CHAMPS_REPRIS = ['presentation_texte', 'nom_atelier', 'type_atelier', 'capacite_equipes', 'descriptif_atelier',
       'venue_avec_barnum', 'nb_tables', 'nb_chaises', 'electricite_necessaire', 'contraintes_emplacement', 'defis_proposes'];
     const valeursAuto = {};           // champ -> valeur posée automatiquement
     const valeursDefaut = {};         // valeur d'origine du champ (ex. "2", "false")
@@ -388,13 +401,70 @@
       if (el.tagName === 'SELECT' && el.value === '' && v) el.value = valeursDefaut[k]; // valeur hors liste ignorée
       valeursAuto[k] = el.value;
     }
+    // Ateliers supplémentaires : une carte par atelier, sans attribut name (envoyés à part, en liste).
+    const TYPES_ATELIER = ['Sportif', 'Réflexion / quiz', 'Technique / savoir-faire', 'Ludique', 'Mémoire et histoire', 'Premiers secours', 'Découverte des métiers', 'Autre'];
+    const zoneSupp = document.getElementById('ateliers-supp');
+    let suppModifie = false;     // une carte saisie à la main n'est jamais remplacée par une reprise
+    function champCarte(libelle, el) {
+      const d = document.createElement('div'); d.className = 'champ';
+      const l = document.createElement('label'); l.textContent = libelle;
+      d.append(l, el); return d;
+    }
+    function creerCarteAtelier(v) {
+      v = v || {};
+      const carte = document.createElement('div'); carte.className = 'carte-atelier';
+      const tete = document.createElement('header');
+      const titre = document.createElement('span');
+      const retirer = document.createElement('button'); retirer.type = 'button'; retirer.className = 'secondary retirer'; retirer.textContent = 'Retirer';
+      retirer.addEventListener('click', () => { carte.remove(); suppModifie = true; numeroter(); });
+      tete.append(titre, retirer); carte.appendChild(tete);
+      const mk = (tag, cle, extra) => { const e = document.createElement(tag); e.dataset.cle = cle; Object.assign(e, extra || {}); e.addEventListener('input', () => { suppModifie = true; }); return e; };
+      const nom = mk('input', 'nom', { maxLength: 300, value: v.nom || '' });
+      const type = mk('select', 'type_atelier');
+      const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Choisir...'; type.appendChild(o0);
+      TYPES_ATELIER.forEach(t => { const o = document.createElement('option'); o.textContent = t; type.appendChild(o); });
+      type.value = TYPES_ATELIER.indexOf(v.type_atelier) !== -1 ? v.type_atelier : '';
+      const eq = mk('input', 'capacite_equipes', { type: 'number', min: 1, value: v.capacite_equipes || '' });
+      const desc = mk('textarea', 'descriptif_atelier', { rows: 3, maxLength: 2000, value: v.descriptif_atelier || '' });
+      const sel = (cle, val) => { const e = mk('select', cle); [['false', 'Non'], ['true', 'Oui']].forEach(([x, t]) => { const o = document.createElement('option'); o.value = x; o.textContent = t; e.appendChild(o); }); e.value = val ? 'true' : 'false'; return e; };
+      const barnum = sel('venue_avec_barnum', v.venue_avec_barnum), elec = sel('electricite_necessaire', v.electricite_necessaire);
+      const tables = mk('input', 'nb_tables', { type: 'number', min: 0, value: v.nb_tables || '' });
+      const chaises = mk('input', 'nb_chaises', { type: 'number', min: 0, value: v.nb_chaises || '' });
+      const besoins = mk('input', 'contraintes_emplacement', { maxLength: 300, value: v.contraintes_emplacement || '' });
+      const grille = document.createElement('div'); grille.className = 'grille';
+      const large = (n) => { n.classList.add('large'); return n; };
+      grille.append(large(champCarte("Nom de l'atelier", nom)), champCarte("Type d'atelier", type), champCarte('Équipes en même temps', eq),
+        large(champCarte("Description de l'atelier", desc)), champCarte('Barnum', barnum), champCarte('Électricité', elec),
+        champCarte('Tables', tables), champCarte('Chaises', chaises), large(champCarte('Besoins particuliers', besoins)));
+      carte.appendChild(grille);
+      zoneSupp.appendChild(carte);
+      numeroter();
+    }
+    function numeroter() {
+      Array.from(zoneSupp.children).forEach((c, i) => { c.firstChild.firstChild.textContent = 'Atelier ' + (i + 2); });
+    }
+    function lireAteliersSupp() {
+      return Array.from(zoneSupp.children).map(c => {
+        const a = {};
+        c.querySelectorAll('[data-cle]').forEach(e => { a[e.dataset.cle] = e.value; });
+        return a;
+      }).filter(a => ['nom', 'type_atelier', 'capacite_equipes', 'descriptif_atelier', 'nb_tables', 'nb_chaises', 'contraintes_emplacement'].some(k => String(a[k] || '').trim() !== ''));
+    }
+    function poserAteliersSupp(liste) {
+      if (suppModifie) return;
+      zoneSupp.textContent = '';
+      liste.forEach(creerCarteAtelier);
+    }
+    document.getElementById('ajout-atelier').addEventListener('click', () => { suppModifie = true; creerCarteAtelier(); });
+
     function appliquerStructure() {
       const s = connues[champNom.value.trim().toLowerCase()];
       poser('typologie', s && s.typologie ? s.typologie : undefined);
       const prec = s && s.precedent ? s.precedent : {};
       CHAMPS_REPRIS.forEach(k => poser(k, prec[k]));
+      poserAteliersSupp(s && s.ateliers_supp ? s.ateliers_supp : []);
       aidePres.hidden = !prec.presentation_texte;
-      const nbAtelier = CHAMPS_REPRIS.filter(k => k !== 'presentation_texte' && prec[k]).length;
+      const nbAtelier = CHAMPS_REPRIS.filter(k => k !== 'presentation_texte' && prec[k]).length + (s && s.ateliers_supp ? s.ateliers_supp.length : 0);
       aideAtelier.hidden = !nbAtelier;
       aideAtelier.textContent = nbAtelier ? "Vos réponses de " + (s.annee || "l'an dernier") + " sont reprises ci-dessous : vérifiez-les et modifiez ce qui change." : '';
       document.getElementById('bloc-reprise').hidden = !(s && s.contacts_connus);
@@ -518,6 +588,13 @@
         const dd = document.createElement('dd'); dd.textContent = v;
         ligne.append(dt, dd); dl.appendChild(ligne);
       });
+      if (Array.isArray(payload.ateliers_supp) && payload.ateliers_supp.length) {
+        const ligne = document.createElement('div');
+        const dt = document.createElement('dt'); dt.textContent = 'Ateliers supplémentaires';
+        const dd = document.createElement('dd');
+        dd.textContent = payload.ateliers_supp.map(a => [a.nom || 'Atelier', a.type_atelier, a.capacite_equipes ? a.capacite_equipes + ' équipes' : ''].filter(Boolean).join(' - ')).join('\n');
+        ligne.append(dt, dd); dl.appendChild(ligne);
+      }
       if (logoData) {
         const ligne = document.createElement('div');
         const dt = document.createElement('dt'); dt.textContent = 'Logo';
@@ -578,6 +655,10 @@
         payload.mecenat_nature = Array.from(casesNature).filter(c => c.checked).map(c => c.value).join(',');
       }
       payload.contacts_supplementaires = lireContacts().map(c => [c.nom, c.email, c.tel].join(' | ')).join(' ; ');
+      if (!document.querySelector('#bloc-ateliers-supp').closest('[hidden]')) {
+        const supp = lireAteliersSupp();
+        if (supp.length) payload.ateliers_supp = supp;
+      }
       if (logoData) payload.logo = logoData;
       btn.disabled = true;
       btn.textContent = 'Envoi en cours...';
