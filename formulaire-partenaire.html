@@ -426,16 +426,10 @@
       type.value = TYPES_ATELIER.indexOf(v.type_atelier) !== -1 ? v.type_atelier : '';
       const eq = mk('input', 'capacite_equipes', { type: 'number', min: 1, value: v.capacite_equipes || '' });
       const desc = mk('textarea', 'descriptif_atelier', { rows: 3, maxLength: 2000, value: v.descriptif_atelier || '' });
-      const sel = (cle, val) => { const e = mk('select', cle); [['false', 'Non'], ['true', 'Oui']].forEach(([x, t]) => { const o = document.createElement('option'); o.value = x; o.textContent = t; e.appendChild(o); }); e.value = val ? 'true' : 'false'; return e; };
-      const barnum = sel('venue_avec_barnum', v.venue_avec_barnum), elec = sel('electricite_necessaire', v.electricite_necessaire);
-      const tables = mk('input', 'nb_tables', { type: 'number', min: 0, value: v.nb_tables || '' });
-      const chaises = mk('input', 'nb_chaises', { type: 'number', min: 0, value: v.nb_chaises || '' });
-      const besoins = mk('input', 'contraintes_emplacement', { maxLength: 300, value: v.contraintes_emplacement || '' });
       const grille = document.createElement('div'); grille.className = 'grille';
       const large = (n) => { n.classList.add('large'); return n; };
       grille.append(large(champCarte("Nom de l'atelier", nom)), champCarte("Type d'atelier", type), champCarte('Équipes en même temps', eq),
-        large(champCarte("Description de l'atelier", desc)), champCarte('Barnum', barnum), champCarte('Électricité', elec),
-        champCarte('Tables', tables), champCarte('Chaises', chaises), large(champCarte('Besoins particuliers', besoins)));
+        large(champCarte("Description de l'atelier", desc)));
       carte.appendChild(grille);
       zoneSupp.appendChild(carte);
       numeroter();
@@ -448,7 +442,7 @@
         const a = {};
         c.querySelectorAll('[data-cle]').forEach(e => { a[e.dataset.cle] = e.value; });
         return a;
-      }).filter(a => ['nom', 'type_atelier', 'capacite_equipes', 'descriptif_atelier', 'nb_tables', 'nb_chaises', 'contraintes_emplacement'].some(k => String(a[k] || '').trim() !== ''));
+      }).filter(a => ['nom', 'type_atelier', 'capacite_equipes', 'descriptif_atelier'].some(k => String(a[k] || '').trim() !== ''));
     }
     function poserAteliersSupp(liste) {
       if (suppModifie) return;
