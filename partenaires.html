@@ -350,6 +350,15 @@
         form.append(det);
       });
       form.insertBefore(sectionAteliers(p), form.children[1] || null);
+      // Aperçu : la page du partenaire, en lecture seule, dans un nouvel onglet.
+      const apercuBtn = el('button', { type: 'button', class: 'secondary', text: 'Voir comme le partenaire', onclick: async () => {
+        apercuBtn.disabled = true;
+        const res = await apiPost('portail.apercu', { partenariat_id: p.id });
+        apercuBtn.disabled = false;
+        if (res.success) window.open('espace-partenaire.html#apercu=' + encodeURIComponent(res.data.token), '_blank');
+        else alert('Erreur : ' + res.error.message);
+      } });
+      form.insertBefore(el('div', { style: 'margin:8px 0' }, apercuBtn), form.firstChild);
       const msg = el('span', { class: 'hint' });
       form.append(el('div', { style: 'display:flex;gap:8px;align-items:center;margin-top:12px' },
         el('button', { type: 'submit', text: 'Enregistrer' }),
