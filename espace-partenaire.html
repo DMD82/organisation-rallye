@@ -117,6 +117,8 @@
     .rc-lecture { background: #F7F5EF; border: 1px solid var(--rc-trait); border-radius: 6px; padding: 9px 11px; font-size: .95rem; overflow-wrap: anywhere; }
     .rc-bilan { white-space: pre-wrap; line-height: 1.5; }
     .rc-logo-actuel { width: 64px; height: 64px; object-fit: contain; background: #fff; border: 1px solid var(--rc-trait); border-radius: 6px; flex: none; }
+    .carte-atelier { border: 1px solid var(--rc-trait); border-radius: 8px; padding: 14px 14px 2px; margin-bottom: 12px; background: #FBFAF7; }
+    .carte-atelier > header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-family: var(--rc-titre); font-size: 1.05rem; color: var(--rc-marine); }
     #code { letter-spacing: .5em; font-size: 1.4rem; text-align: center; max-width: 12em; }
     #msg-ok { margin-top: 12px; }
   </style>
@@ -215,60 +217,20 @@
         </section>
 
         <section class="rc-section">
-          <h2>Votre atelier</h2>
-          <div class="grille">
-            <div class="champ">
-              <label for="type_atelier">Type d'atelier</label>
-              <select id="type_atelier">
-                <option value="">Choisir...</option>
-                <option>Sportif</option>
-                <option>Réflexion / quiz</option>
-                <option>Technique / savoir-faire</option>
-                <option>Ludique</option>
-                <option>Mémoire et histoire</option>
-                <option>Premiers secours</option>
-                <option>Découverte des métiers</option>
-                <option>Autre</option>
-              </select>
-            </div>
-            <div class="champ">
-              <label for="capacite_equipes">Équipes en même temps</label>
-              <input id="capacite_equipes" type="number" min="1">
-            </div>
-            <div class="champ large">
-              <label for="descriptif_atelier">Description de l'atelier</label>
-              <textarea id="descriptif_atelier" rows="3" maxlength="2000"></textarea>
-            </div>
-            <div class="champ">
-              <label for="venue_avec_barnum">Barnum</label>
-              <select id="venue_avec_barnum"><option value="false">Non</option><option value="true">Oui, je viens avec un barnum</option></select>
-            </div>
-            <div class="champ">
-              <label for="electricite_necessaire">Électricité</label>
-              <select id="electricite_necessaire"><option value="false">Non</option><option value="true">Oui, j'en ai besoin</option></select>
-            </div>
-            <div class="champ">
-              <label for="nb_tables">Tables</label>
-              <input id="nb_tables" type="number" min="0">
-            </div>
-            <div class="champ">
-              <label for="nb_chaises">Chaises</label>
-              <input id="nb_chaises" type="number" min="0">
-            </div>
-            <div class="champ large">
-              <label for="contraintes_emplacement">Besoins particuliers <span class="opt">(dimension, sol, véhicule...)</span></label>
-              <input id="contraintes_emplacement" maxlength="400">
-            </div>
-            <div class="champ">
-              <label for="fournit_goodies">Goodies pour les participants</label>
-              <select id="fournit_goodies"><option value="false">Non</option><option value="true">Oui</option></select>
-            </div>
-          </div>
+          <h2>Vos ateliers</h2>
+          <p class="rc-intro">Un atelier par carte : numéro, description et logistique. Ajoutez-en si vous en animez plusieurs.</p>
+          <div id="ateliers"></div>
+          <p class="aide" id="aide-ateliers" hidden>Un atelier numéroté par l'équipe ne peut être retiré que par elle : écrivez-nous si besoin.</p>
+          <p style="margin:0 0 16px"><button type="button" class="secondary" id="ajout-atelier">+ Ajouter un atelier</button></p>
         </section>
 
         <section class="rc-section">
           <h2>Pour aller plus loin</h2>
           <div class="grille">
+            <div class="champ">
+              <label for="fournit_goodies">Goodies pour les participants</label>
+              <select id="fournit_goodies"><option value="false">Non</option><option value="true">Oui</option></select>
+            </div>
             <div class="champ">
               <label for="contact_presse">Contact presse de votre structure</label>
               <input id="contact_presse" maxlength="400">
@@ -310,10 +272,9 @@
     // Les erreurs de cette page ne passent pas par apiPost (qui renverrait vers la connexion de l'équipe).
     const CLE = 'rc_portail';
     const $ = (id) => document.getElementById(id);
-    const CHAMPS = ['contact_nom', 'presentation_texte', 'type_atelier', 'capacite_equipes', 'descriptif_atelier',
-      'venue_avec_barnum', 'nb_tables', 'nb_chaises', 'electricite_necessaire', 'contraintes_emplacement',
-      'fournit_goodies', 'contact_presse', 'contact_presse_global', 'defis_proposes', 'message_partenaire'];
-    const BOOLEENS = ['venue_avec_barnum', 'electricite_necessaire', 'fournit_goodies'];
+    const CHAMPS = ['contact_nom', 'presentation_texte', 'fournit_goodies', 'contact_presse', 'contact_presse_global', 'defis_proposes', 'message_partenaire'];
+    const BOOLEENS = ['fournit_goodies'];
+    const TYPES_ATELIER = ['Sportif', 'Réflexion / quiz', 'Technique / savoir-faire', 'Ludique', 'Mémoire et histoire', 'Premiers secours', 'Découverte des métiers', 'Autre'];
     let jeton = '', emailSaisi = '', fiches = [], courante = null, logoData = null;
 
     try { jeton = sessionStorage.getItem(CLE) || ''; } catch (e) { jeton = ''; }
@@ -436,6 +397,56 @@
       return { nom: lignes.map((p) => p[0]).join(' ; '), contact: lignes.map((p) => p[1]).join(' ; ') };
     }
 
+    // ---------- Ateliers ----------
+    function champCarte(libelle, el, large) {
+      const d = document.createElement('div'); d.className = 'champ' + (large ? ' large' : '');
+      const l = document.createElement('label'); l.textContent = libelle;
+      d.append(l, el); return d;
+    }
+    function creerCarteAtelier(v) {
+      v = v || {};
+      const carte = document.createElement('div'); carte.className = 'carte-atelier'; carte.dataset.id = v.id || '';
+      const tete = document.createElement('header');
+      const titre = document.createElement('span'); titre.dataset.numero = v.numero || '';
+      tete.appendChild(titre);
+      if (!v.numero) {
+        const retirer = document.createElement('button'); retirer.type = 'button'; retirer.className = 'secondary retirer'; retirer.textContent = 'Retirer';
+        retirer.addEventListener('click', () => { carte.remove(); numeroter(); });
+        tete.appendChild(retirer);
+      }
+      carte.appendChild(tete);
+      const mk = (tag, cle, extra) => { const e = document.createElement(tag); e.dataset.cle = cle; Object.assign(e, extra || {}); return e; };
+      const nom = mk('input', 'nom', { maxLength: 300, value: v.nom || '' });
+      const type = mk('select', 'type_atelier');
+      const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Choisir...'; type.appendChild(o0);
+      TYPES_ATELIER.forEach((t) => { const o = document.createElement('option'); o.textContent = t; type.appendChild(o); });
+      type.value = TYPES_ATELIER.indexOf(v.type_atelier) !== -1 ? v.type_atelier : '';
+      const eq = mk('input', 'capacite_equipes', { type: 'number', min: 1, value: v.capacite_equipes || '' });
+      const desc = mk('textarea', 'descriptif_atelier', { rows: 3, maxLength: 2000, value: v.descriptif_atelier || '' });
+      const sel = (cle, val) => { const e = mk('select', cle); [['false', 'Non'], ['true', 'Oui']].forEach(([x, t]) => { const o = document.createElement('option'); o.value = x; o.textContent = t; e.appendChild(o); }); e.value = val ? 'true' : 'false'; return e; };
+      const grille = document.createElement('div'); grille.className = 'grille';
+      grille.append(champCarte("Nom de l'atelier", nom, true), champCarte("Type d'atelier", type), champCarte('Équipes en même temps', eq),
+        champCarte("Description de l'atelier", desc, true), champCarte('Barnum', sel('venue_avec_barnum', v.venue_avec_barnum)), champCarte('Électricité', sel('electricite_necessaire', v.electricite_necessaire)),
+        champCarte('Tables', mk('input', 'nb_tables', { type: 'number', min: 0, value: v.nb_tables || '' })), champCarte('Chaises', mk('input', 'nb_chaises', { type: 'number', min: 0, value: v.nb_chaises || '' })),
+        champCarte('Besoins particuliers', mk('input', 'contraintes_emplacement', { maxLength: 300, value: v.contraintes_emplacement || '' }), true));
+      carte.appendChild(grille);
+      $('ateliers').appendChild(carte);
+      numeroter();
+    }
+    function numeroter() {
+      const cartes = Array.from($('ateliers').children);
+      cartes.forEach((c, i) => { const t = c.firstChild.firstChild; t.textContent = t.dataset.numero ? 'Atelier n° ' + t.dataset.numero : 'Atelier ' + (i + 1); });
+      $('aide-ateliers').hidden = !cartes.some((c) => c.firstChild.firstChild.dataset.numero);
+    }
+    function lireAteliers() {
+      return Array.from($('ateliers').children).map((c) => {
+        const a = { id: c.dataset.id || undefined };
+        c.querySelectorAll('[data-cle]').forEach((e) => { a[e.dataset.cle] = e.value; });
+        return a;
+      });
+    }
+    $('ajout-atelier').addEventListener('click', () => { if ($('ateliers').children.length < 8) creerCarteAtelier(); });
+
     // ---------- Affichage de la fiche ----------
     function afficher(f) {
       courante = f; logoData = null;
@@ -446,6 +457,7 @@
       $('modif-info').textContent = f.modifie_le ? 'Dernière modification : ' + new Date(f.modifie_le).toLocaleDateString('fr-FR') : '';
       $('contact_email').textContent = f.contact_email;
       CHAMPS.forEach((k) => { const v = f.champs[k]; $(k).value = BOOLEENS.indexOf(k) !== -1 ? String(v === true) : (v || ''); });
+      $('ateliers').textContent = ''; (f.ateliers || []).forEach(creerCarteAtelier);
       $('contacts-sup').textContent = ''; lireContacts(f.champs.contacts_supplementaires).forEach(ajouterContact);
       $('autorites').textContent = '';
       lireAutorites(f.champs.autorite_a_inviter_nom, f.champs.autorite_a_inviter_contact).forEach(ajouterAutorite);
@@ -475,7 +487,7 @@
       champs.contacts_supplementaires = ecrireContacts();
       const a = ecrireAutorites();
       champs.autorite_a_inviter_nom = a.nom; champs.autorite_a_inviter_contact = a.contact;
-      const payload = { id: courante.id, champs: champs };
+      const payload = { id: courante.id, champs: champs, ateliers: lireAteliers() };
       if (logoData) payload.logo = logoData;
       $('btn-envoyer').disabled = true;
       const res = await appel('portail.enregistrer', payload);
