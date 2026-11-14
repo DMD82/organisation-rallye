@@ -275,9 +275,12 @@
     const CHAMPS = ['contact_nom', 'presentation_texte', 'fournit_goodies', 'contact_presse', 'contact_presse_global', 'defis_proposes', 'message_partenaire'];
     const BOOLEENS = ['fournit_goodies'];
     const TYPES_ATELIER = ['Sportif', 'Réflexion / quiz', 'Technique / savoir-faire', 'Ludique', 'Mémoire et histoire', 'Premiers secours', 'Découverte des métiers', 'Autre'];
-    let jeton = '', emailSaisi = '', fiches = [], courante = null, logoData = null;
+    let jeton = '', emailSaisi = '', fiches = [], courante = null, logoData = null, apercu = false;
 
     try { jeton = sessionStorage.getItem(CLE) || ''; } catch (e) { jeton = ''; }
+    // Aperçu organisateur : le jeton arrive dans le fragment de l'adresse (jamais envoyé au serveur), puis il est retiré.
+    const m = /^#apercu=([A-Za-z0-9]{32,128})$/.exec(location.hash);
+    if (m) { jeton = m[1]; try { sessionStorage.setItem(CLE, jeton); } catch (e) { /* sans stockage, l'aperçu reste valable dans cette page */ } history.replaceState(null, '', location.pathname); }
 
     async function appel(action, payload) {
       try {
@@ -338,6 +341,7 @@
       const res = await appel('portail.fiche');
       if (!res.success) { setJeton(''); etape('email'); if (res.error && res.error.code !== 'PORTAIL_SESSION') montrer('erreur-email', res.error.message); return; }
       fiches = res.data.fiches;
+      apercu = !!res.data.apercu;
       $('qui').textContent = 'Connecté : ' + res.data.email + ' - édition ' + (res.data.edition.annee || '');
       const sel = $('choix-fiche');
       sel.textContent = '';
@@ -347,8 +351,22 @@
       sel.value = f.id;
       afficher(f);
       etape('espace');
+      appliquerApercu();
     }
-    $('choix-fiche').addEventListener('change', (ev) => { montrer('msg-ok', ''); afficher(fiches.find((x) => x.id === ev.target.value)); });
+    $('choix-fiche').addEventListener('change', (ev) => { montrer('msg-ok', ''); afficher(fiches.find((x) => x.id === ev.target.value)); appliquerApercu(); });
+
+    // Aperçu organisateur : bandeau, formulaire en lecture seule, pas d'enregistrement.
+    function appliquerApercu() {
+      let bandeau = $('bandeau-apercu');
+      if (!apercu) { if (bandeau) bandeau.remove(); return; }
+      if (!bandeau) {
+        bandeau = document.createElement('p'); bandeau.id = 'bandeau-apercu'; bandeau.className = 'rc-info'; bandeau.setAttribute('role', 'status');
+        bandeau.textContent = "Aperçu organisateur : vous voyez la page comme le partenaire, en lecture seule (30 minutes).";
+        $('espace').insertBefore(bandeau, $('espace').firstChild);
+      }
+      document.querySelectorAll('#form-fiche input, #form-fiche select, #form-fiche textarea, #form-fiche button').forEach((e) => { e.disabled = true; });
+      document.querySelector('#form-fiche .rc-envoi').hidden = true;
+    }
 
     // ---------- Répéteurs ----------
     function champTexte(libelle, valeur, type) {
