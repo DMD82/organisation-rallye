@@ -218,10 +218,37 @@
 
         <section class="rc-section">
           <h2>Vos ateliers</h2>
-          <p class="rc-intro">Un atelier par carte : numéro, description et logistique. Ajoutez-en si vous en animez plusieurs.</p>
+          <p class="rc-intro">Un atelier par carte : nom, type, description. Ajoutez-en si vous en animez plusieurs.</p>
           <div id="ateliers"></div>
           <p class="aide" id="aide-ateliers" hidden>Un atelier numéroté par l'équipe ne peut être retiré que par elle : écrivez-nous si besoin.</p>
           <p style="margin:0 0 16px"><button type="button" class="secondary" id="ajout-atelier">+ Ajouter un atelier</button></p>
+        </section>
+
+        <section class="rc-section">
+          <h2>Logistique de votre structure</h2>
+          <p class="rc-intro">Ce dont vous avez besoin pour l'ensemble de vos ateliers. Si un atelier a des besoins différents, indiquez-le dans sa carte ci-dessus.</p>
+          <div class="grille">
+            <div class="champ">
+              <label for="venue_avec_barnum">Vous venez avec un barnum ?</label>
+              <select id="venue_avec_barnum"><option value="false">Non</option><option value="true">Oui</option></select>
+            </div>
+            <div class="champ">
+              <label for="electricite_necessaire">Besoin d'électricité ?</label>
+              <select id="electricite_necessaire"><option value="false">Non</option><option value="true">Oui</option></select>
+            </div>
+            <div class="champ">
+              <label for="nb_tables">Tables</label>
+              <input id="nb_tables" type="number" min="0">
+            </div>
+            <div class="champ">
+              <label for="nb_chaises">Chaises</label>
+              <input id="nb_chaises" type="number" min="0">
+            </div>
+            <div class="champ large">
+              <label for="contraintes_emplacement">Besoins particuliers <span class="opt">(dimension, sol, véhicule...)</span></label>
+              <input id="contraintes_emplacement" maxlength="400">
+            </div>
+          </div>
         </section>
 
         <section class="rc-section">
@@ -272,8 +299,9 @@
     // Les erreurs de cette page ne passent pas par apiPost (qui renverrait vers la connexion de l'équipe).
     const CLE = 'rc_portail';
     const $ = (id) => document.getElementById(id);
-    const CHAMPS = ['contact_nom', 'presentation_texte', 'fournit_goodies', 'contact_presse', 'contact_presse_global', 'defis_proposes', 'message_partenaire'];
-    const BOOLEENS = ['fournit_goodies'];
+    const CHAMPS = ['contact_nom', 'presentation_texte', 'fournit_goodies', 'contact_presse', 'contact_presse_global', 'defis_proposes', 'message_partenaire',
+      'venue_avec_barnum', 'electricite_necessaire', 'nb_tables', 'nb_chaises', 'contraintes_emplacement'];
+    const BOOLEENS = ['fournit_goodies', 'venue_avec_barnum', 'electricite_necessaire'];
     const TYPES_ATELIER = ['Sportif', 'Réflexion / quiz', 'Technique / savoir-faire', 'Ludique', 'Mémoire et histoire', 'Premiers secours', 'Découverte des métiers', 'Autre'];
     let jeton = '', emailSaisi = '', fiches = [], courante = null, logoData = null, apercu = false;
 
@@ -442,12 +470,17 @@
       const eq = mk('input', 'capacite_equipes', { type: 'number', min: 1, value: v.capacite_equipes || '' });
       const desc = mk('textarea', 'descriptif_atelier', { rows: 3, maxLength: 2000, value: v.descriptif_atelier || '' });
       const sel = (cle, val) => { const e = mk('select', cle); [['false', 'Non'], ['true', 'Oui']].forEach(([x, t]) => { const o = document.createElement('option'); o.value = x; o.textContent = t; e.appendChild(o); }); e.value = val ? 'true' : 'false'; return e; };
+      const propre = sel('logistique_propre', v.logistique_propre);
       const grille = document.createElement('div'); grille.className = 'grille';
       grille.append(champCarte("Nom de l'atelier", nom, true), champCarte("Type d'atelier", type), champCarte('Équipes en même temps', eq),
-        champCarte("Description de l'atelier", desc, true), champCarte('Barnum', sel('venue_avec_barnum', v.venue_avec_barnum)), champCarte('Électricité', sel('electricite_necessaire', v.electricite_necessaire)),
+        champCarte("Description de l'atelier", desc, true), champCarte('Cet atelier a une logistique différente de celle indiquée pour la structure ?', propre, true));
+      const logi = document.createElement('div'); logi.className = 'grille';
+      logi.append(champCarte('Barnum', sel('venue_avec_barnum', v.venue_avec_barnum)), champCarte('Électricité', sel('electricite_necessaire', v.electricite_necessaire)),
         champCarte('Tables', mk('input', 'nb_tables', { type: 'number', min: 0, value: v.nb_tables || '' })), champCarte('Chaises', mk('input', 'nb_chaises', { type: 'number', min: 0, value: v.nb_chaises || '' })),
         champCarte('Besoins particuliers', mk('input', 'contraintes_emplacement', { maxLength: 300, value: v.contraintes_emplacement || '' }), true));
-      carte.appendChild(grille);
+      logi.hidden = !v.logistique_propre;
+      propre.addEventListener('change', () => { logi.hidden = propre.value !== 'true'; });
+      carte.appendChild(grille); carte.appendChild(logi);
       $('ateliers').appendChild(carte);
       numeroter();
     }
