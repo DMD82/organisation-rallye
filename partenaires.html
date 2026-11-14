@@ -105,7 +105,9 @@
         ['contact_communication', 'Contact communication', 't'], ['contact_presse', 'Contact presse', 't'], ['contact_presse_global', 'Contact presse global', 't'],
         ['souhaite_proposer_defis', 'Propose des défis', 'b'], ['defis_proposes', 'Défis proposés', 'a'] ] },
       { titre: 'Suivi', champs: [
-        ['statut', 'Statut', 's'], ['retour_bilan', 'Retour après le rallye', 'a'], ['notes', 'Notes', 'a'] ] }
+        ['statut', 'Statut', 's'], ['retour_bilan', 'Retour après le rallye (visible du partenaire si la case ci-dessous est cochée)', 'a'],
+        ['bilan_visible', 'Bilan visible dans l\'espace partenaire', 'b'],
+        ['message_partenaire', 'Message du partenaire', 'a'], ['notes', 'Notes', 'a'] ] }
     ];
 
     // Une fiche est complète quand ces champs essentiels sont renseignés.
@@ -125,21 +127,6 @@
       });
       enfants.flat().forEach(c => { if (c !== null && c !== undefined) n.append(c); });
       return n;
-    }
-
-    // "À mettre à jour" = partenaire encore au statut "à solliciter" que personne
-    // n'a modifié ni validé dans l'outil (colonne modifie_le vide). Un partenaire
-    // sollicité, confirmé ou décliné a déjà répondu : il n'est pas à mettre à jour.
-    function aMettreAJour(p) {
-      return !dateModif(p) && (p.statut || 'a_solliciter') === 'a_solliciter';
-    }
-    function dateModif(p) {
-      if (!rempli(p.modifie_le)) return null;
-      const d = new Date(p.modifie_le);
-      return isNaN(d.getTime()) ? null : d;
-    }
-    function dateCourte(d) {
-      return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
     }
 
     function urlSure(u) { return /^https?:\/\//i.test(u || '') ? u : ''; }
@@ -162,11 +149,33 @@
       loadPartenariats();
     }
 
+    // Sans trace de réponse : fiche encore "à solliciter" et jamais modifiée.
+    function aMettreAJour(p) { return !p.modifie_le && (!p.statut || p.statut === 'a_solliciter'); }
+    function dateCourte(v) {
+      const d = new Date(v);
+      return isNaN(d) ? String(v) : d.toLocaleDateString('fr-FR');
+    }
+
+    async function marquerAJour(p, bouton) {
+      bouton.disabled = true;
+      const res = await apiPost('partenaires.update', { id: p.id });
+      if (res.success) loadPartenariats();
+      else { bouton.disabled = false; alert('Erreur : ' + res.error.message); }
+    }
+
+    function celluleMaj(p) {
+      if (p.modifie_le) return el('span', { text: dateCourte(p.modifie_le), title: p.modifie_par ? 'Par ' + p.modifie_par : '' });
+      if (!aMettreAJour(p)) return el('span', { class: 'hint', text: 'Réponse reçue' });
+      const b = el('button', { class: 'secondary', text: 'Marquer à jour' });
+      b.addEventListener('click', () => marquerAJour(p, b));
+      return el('span', {}, el('span', { text: 'À mettre à jour' }), ' ', b);
+    }
+
     function filtrer() {
       const texte = document.getElementById('filtre-texte').value.trim().toLowerCase();
       const statut = document.getElementById('filtre-statut').value;
-      const incomplet = document.getElementById('filtre-incomplet').checked;
       const maj = document.getElementById('filtre-maj').value;
+      const incomplet = document.getElementById('filtre-incomplet').checked;
       return partenariatsData.filter(p =>
         (!texte || (p.entite_nom || '').toLowerCase().includes(texte)) &&
         (!statut || p.statut === statut) &&
@@ -198,23 +207,6 @@
       else { alert('Erreur : ' + res.error.message); select.value = p.statut; }
     }
 
-    async function marquerAJour(p, bouton) {
-      bouton.disabled = true;
-      const res = await apiPost('partenaires.update', { id: p.id });
-      bouton.disabled = false;
-      if (res.success) loadPartenariats();
-      else alert('Erreur : ' + res.error.message);
-    }
-
-    function celluleMaj(p) {
-      const d = dateModif(p);
-      if (d) return el('td', { title: p.modifie_par ? 'Par ' + p.modifie_par : '' }, el('span', { class: 'hint', text: dateCourte(d) }));
-      if (!aMettreAJour(p)) return el('td', {}, el('span', { class: 'hint', text: 'Réponse reçue' }));
-      const b = el('button', { class: 'secondary', text: 'Marquer à jour', title: 'Confirme que la fiche est correcte pour cette édition' });
-      b.addEventListener('click', () => marquerAJour(p, b));
-      return el('td', {}, el('span', { style: 'color:#b45309;font-size:0.8rem', text: 'À mettre à jour' }), el('br'), b);
-    }
-
     function ligne(p) {
       const sel = el('select', { class: 'statut-inline' },
         STATUTS.map(([v, l]) => el('option', { value: v, text: l, selected: p.statut === v ? 'selected' : false })));
@@ -232,7 +224,7 @@
         el('td', {}, sel),
         el('td', {}, el('span', { class: 'jauge', title: pct + ' pour cent' }, el('span', { style: 'width:' + pct + '%' })),
           ' ', el('span', { class: 'hint', text: pct + '%' })),
-        celluleMaj(p),
+        el('td', {}, celluleMaj(p)),
         el('td', {}, boutonsOpportunites(p)),
         el('td', { style: 'white-space:nowrap' },
           el('button', { text: 'Fiche', onclick: () => ouvrirFiche(p) }), ' ',
@@ -243,8 +235,8 @@
       const tbody = document.getElementById('partenariats-body');
       tbody.textContent = '';
       const liste = filtrer();
-      const aMettre = partenariatsData.filter(aMettreAJour).length;
-      document.getElementById('compteur').textContent = '(' + liste.length + ' sur ' + partenariatsData.length + (aMettre ? ', ' + aMettre + ' à mettre à jour' : '') + ')';
+      const nbMaj = partenariatsData.filter(aMettreAJour).length;
+      document.getElementById('compteur').textContent = '(' + liste.length + ' sur ' + partenariatsData.length + (nbMaj ? ', ' + nbMaj + ' à mettre à jour' : '') + ')';
       if (!liste.length) {
         tbody.append(el('tr', {}, el('td', { colspan: '10', class: 'hint', text: partenariatsData.length ? 'Aucun résultat pour ce filtre.' : "Aucun partenaire pour l'instant." })));
         return;
